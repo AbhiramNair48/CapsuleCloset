@@ -1,16 +1,5 @@
 # capsule_closet_app
 
-A new Flutter project.
+To run the project, you need flutter installed as well as an android emulator. Use this video: https://www.youtube.com/watch?v=ASzu_JzcA34
 
-## Getting Started
-
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Clone this Repository onto your own local computer and use "flutter run" in the VsCode terminal to see if everything works.
