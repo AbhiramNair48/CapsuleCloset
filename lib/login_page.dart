@@ -13,6 +13,23 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
+  static const double _logoSize = 150.0;
+  static const double _containerWidth = 300.0;
+  static const double _bottomImageHeight = 300.0;
+  static const double _bottomImageWidth = 400.0;
+
+  void _showLoadingDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return const Center(
+          child: CircularProgressIndicator(),
+        );
+      },
+    );
+  }
+
   Future<void> _handleForgotPassword() async {
     if (_emailController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -23,22 +40,9 @@ class _LoginPageState extends State<LoginPage> {
       );
       return;
     }
-    
-    // Show loading indicator
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return Center(
-          child: CircularProgressIndicator(),
-        );
-      },
-    );
 
-    // Attempt mock password reset
+    _showLoadingDialog();
     final success = await MockAuthService.resetPassword(_emailController.text);
-    
-    // Pop loading dialog
     Navigator.pop(context);
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -60,24 +64,24 @@ class _LoginPageState extends State<LoginPage> {
         width: double.infinity,
         height: double.infinity,
         decoration: BoxDecoration(
-          color: Colors.pink.shade50, // Light pink background
+          color: Colors.pink.shade50,
         ),
         child: SingleChildScrollView(
           child: Column(
             children: [
               // Logo image above the box
               Container(
-                margin: EdgeInsets.only(top: 100, bottom: 50),
-                height: 150,
-                width: 150,
+                margin: const EdgeInsets.only(top: 100, bottom: 50),
+                height: _logoSize,
+                width: _logoSize,
                 child: Image.asset(
                   'assets/images/logo.png',
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) {
-                    return Icon(
+                    return const Icon(
                       Icons.image_not_supported,
                       size: 80,
-                      color: Colors.grey[400],
+                      color: Colors.grey,
                     );
                   },
                 ),
@@ -85,8 +89,8 @@ class _LoginPageState extends State<LoginPage> {
               
               // White container box
               Container(
-                width: 300,
-                padding: EdgeInsets.only(left: 24, right: 24, top: 24, bottom: 24),
+                width: _containerWidth,
+                padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
@@ -94,7 +98,7 @@ class _LoginPageState extends State<LoginPage> {
                     BoxShadow(
                       color: Colors.black.withOpacity(0.1),
                       blurRadius: 8,
-                      offset: Offset(0, 4),
+                      offset: const Offset(0, 4),
                     ),
                   ],
                 ),
@@ -124,7 +128,7 @@ class _LoginPageState extends State<LoginPage> {
                           return null;
                         },
                       ),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
                       
                       // Password field
                       TextFormField(
@@ -147,7 +151,7 @@ class _LoginPageState extends State<LoginPage> {
                           return null;
                         },
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       
                       // Forgot password link
                       Align(
@@ -163,64 +167,54 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                         ),
                       ),
-                      SizedBox(height: 16),
+                      const SizedBox(height: 16),
                       
                       // Sign in button
                       ElevatedButton(
                         onPressed: () async {
                           if (_formKey.currentState!.validate()) {
                             try {
-                              // Show loading indicator
-                              showDialog(
-                                context: context,
-                                barrierDismissible: false,
-                                builder: (BuildContext context) {
-                                  return Center(
-                                    child: CircularProgressIndicator(),
-                                  );
-                                },
-                              );
-
-                              // Attempt mock login
+                              _showLoadingDialog();
                               final success = await MockAuthService.login(
                                 _emailController.text,
                                 _passwordController.text,
                               );
-
-                              // Pop loading dialog
                               Navigator.pop(context);
 
                               if (success) {
                                 Navigator.pushReplacementNamed(context, '/closet');
                               } else {
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Invalid email or password'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
+                            } catch (e) {
+                              Navigator.pop(context);
+                              if (mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Invalid email or password'),
+                                  SnackBar(
+                                    content: Text('Login failed: ${e.toString()}'),
                                     backgroundColor: Colors.red,
                                   ),
                                 );
                               }
-                            } catch (e) {
-                              // Pop loading dialog if there's an error
-                              Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('Login failed: ${e.toString()}'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
                             }
                           }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.black,
                           foregroundColor: Colors.white,
-                          padding: EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        child: Text(
+                        child: const Text(
                           'Sign In',
                           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                         ),
@@ -232,17 +226,17 @@ class _LoginPageState extends State<LoginPage> {
               
               // Additional image below the box
               Container(
-                margin: EdgeInsets.only(top: 30, bottom: 20),
-                height: 300,
-                width: 400,
+                margin: const EdgeInsets.only(top: 30, bottom: 20),
+                height: _bottomImageHeight,
+                width: _bottomImageWidth,
                 child: Image.asset(
                   'assets/images/bottom_img.png',
                   fit: BoxFit.contain,
                   errorBuilder: (context, error, stackTrace) {
-                    return Icon(
+                    return const Icon(
                       Icons.image_not_supported,
                       size: 80,
-                      color: Colors.grey[400],
+                      color: Colors.grey,
                     );
                   },
                 ),

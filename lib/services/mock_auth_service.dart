@@ -1,6 +1,9 @@
-// Mock authentication service for testing purposes
+/// Mock authentication service for testing purposes.
+/// This service simulates network requests with artificial delays.
 class MockAuthService {
-  // Simulated valid credentials
+  static const Duration _networkDelay = Duration(seconds: 1);
+
+  /// Simulated valid credentials for testing.
   static const List<Map<String, String>> _mockUsers = [
     {
       'email': 'test@example.com',
@@ -12,19 +15,20 @@ class MockAuthService {
     },
   ];
 
-  // Simulate login with delay to mimic network request
+  /// Simulates a login attempt with network delay.
+  /// Returns true if credentials match, false otherwise.
   static Future<bool> login(String email, String password) async {
-    // Add artificial delay to simulate network request
-    await Future.delayed(const Duration(seconds: 1));
+    await Future.delayed(_networkDelay);
     
     return _mockUsers.any(
       (user) => user['email'] == email && user['password'] == password,
     );
   }
 
-  // Simulate password reset with delay
+  /// Simulates a password reset request with network delay.
+  /// Returns true if email exists, false otherwise.
   static Future<bool> resetPassword(String email) async {
-    await Future.delayed(const Duration(seconds: 1));
+    await Future.delayed(_networkDelay);
     
     return _mockUsers.any((user) => user['email'] == email);
   }

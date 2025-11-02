@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'login_page.dart'; 
+import 'login_page.dart';
 import 'closet_screen.dart';
-
 
 void main() {
   runApp(const MyApp());
@@ -45,13 +44,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
-// Remove the MyHomePage and _MyHomePageState classes as they are no longer needed
-// class MyHomePage extends StatefulWidget {
-//   const MyHomePage({super.key, required this.title});
-//   // ... rest of the class
-// }
-//
-// class _MyHomePageState extends State<MyHomePage> {
-//   // ... rest of the class
-// }
