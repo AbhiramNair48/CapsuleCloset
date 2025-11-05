@@ -1,0 +1,112 @@
+import 'package:flutter/material.dart';
+import '../models/friend.dart';
+import '../data/mock_friends_data.dart';
+import 'friend_closet_page.dart';
+
+class FriendsPage extends StatelessWidget {
+  const FriendsPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.pink.shade50,
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Search Friends',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                filled: true,
+                fillColor: Colors.white,
+              ),
+            ),
+          ),
+          Expanded(
+            child: GridView.builder(
+              padding: const EdgeInsets.all(16.0),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 0.85,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+              ),
+              itemCount: mockFriends.length,
+              itemBuilder: (context, index) {
+                final friend = mockFriends[index];
+                return _FriendCard(friend: friend);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _FriendCard extends StatelessWidget {
+  final Friend friend;
+
+  const _FriendCard({required this.friend});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => FriendClosetPage(
+                closetItems: friend.closetItems,
+                friendName: friend.name,
+              ),
+            ),
+          );
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              flex: 3,
+              child: GridView.count(
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: 2,
+                children: friend.previewItems.take(4).map((item) {
+                  return Image.asset(
+                    item.imagePath,
+                    fit: BoxFit.cover,
+                  );
+                }).toList(),
+              ),
+            ),
+            Expanded(
+              flex: 1,
+              child: Container(
+                padding: const EdgeInsets.all(8.0),
+                alignment: Alignment.center,
+                child: Text(
+                  friend.name,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

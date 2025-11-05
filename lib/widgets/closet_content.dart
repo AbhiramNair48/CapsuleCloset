@@ -6,10 +6,12 @@ import 'clothing_item_card.dart';
 /// Widget for displaying the closet grid content
 class ClosetContent extends StatelessWidget {
   final Function(ClothingItem) onItemTap;
+  final List<ClothingItem>? items;
 
   const ClosetContent({
     super.key,
     required this.onItemTap,
+    this.items,
   });
 
   static const double _gridPadding = 16.0;
@@ -19,7 +21,7 @@ class ClosetContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = MockClothingData.items;
+    final displayItems = items ?? MockClothingData.items;
 
     return Padding(
       padding: const EdgeInsets.all(_gridPadding),
@@ -30,11 +32,11 @@ class ClosetContent extends StatelessWidget {
           mainAxisSpacing: _gridSpacing,
           childAspectRatio: _gridAspectRatio,
         ),
-        itemCount: items.length,
+        itemCount: displayItems.length,
         itemBuilder: (context, index) {
           return ClothingItemCard(
-            item: items[index],
-            onTap: () => onItemTap(items[index]),
+            item: displayItems[index],
+            onTap: () => onItemTap(displayItems[index]),
           );
         },
       ),
