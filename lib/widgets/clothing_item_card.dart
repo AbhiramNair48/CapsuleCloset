@@ -24,7 +24,7 @@ class ClothingItemCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(_cardBorderRadius),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.3),
+            color: Colors.grey.withValues(alpha: 0.3),
             spreadRadius: 1,
             blurRadius: 5,
             offset: const Offset(0, 2),
@@ -40,6 +40,8 @@ class ClothingItemCard extends StatelessWidget {
               fit: BoxFit.cover,
               width: double.infinity,
               height: double.infinity,
+              cacheWidth: 300, // Cache width for better performance
+              cacheHeight: 300, // Cache height for better performance
               errorBuilder: (context, error, stackTrace) {
                 return Container(
                   color: Colors.grey[300],

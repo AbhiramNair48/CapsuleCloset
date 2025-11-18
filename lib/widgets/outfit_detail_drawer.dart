@@ -16,10 +16,10 @@ class OutfitDetailDrawer extends StatefulWidget {
   });
 
   @override
-  _OutfitDetailDrawerState createState() => _OutfitDetailDrawerState();
+  State<OutfitDetailDrawer> createState() => OutfitDetailDrawerState();
 }
 
-class _OutfitDetailDrawerState extends State<OutfitDetailDrawer> {
+class OutfitDetailDrawerState extends State<OutfitDetailDrawer> {
   late TextEditingController _nameController;
   late Outfit _currentOutfit;
   bool _isEditingName = false;

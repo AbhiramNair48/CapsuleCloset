@@ -1,37 +1,73 @@
 import 'package:flutter/material.dart';
-import 'services/mock_auth_service.dart';
+import 'package:provider/provider.dart';
+import '../services/auth_service.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
 
   @override
-  _LoginPageState createState() => _LoginPageState();
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  bool _isLoading = false;
 
   static const double _logoSize = 150.0;
   static const double _containerWidth = 300.0;
   static const double _bottomImageHeight = 300.0;
   static const double _bottomImageWidth = 400.0;
 
-  void _showLoadingDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext context) {
-        return const Center(
-          child: CircularProgressIndicator(),
+  Future<void> _handleLogin() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final authService = context.read<AuthService>();
+      final success = await authService.login(
+        _emailController.text,
+        _passwordController.text,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (success) {
+        if (!mounted) return;
+        Navigator.pushReplacementNamed(context, '/closet');
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Invalid email or password'),
+            backgroundColor: Colors.red,
+          ),
         );
-      },
-    );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Login failed: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Future<void> _handleForgotPassword() async {
     if (_emailController.text.isEmpty) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please enter your email address first'),
@@ -41,20 +77,43 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    _showLoadingDialog();
-    final success = await MockAuthService.resetPassword(_emailController.text);
-    Navigator.pop(context);
+    setState(() {
+      _isLoading = true;
+    });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          success 
-            ? 'Password reset link sent to ${_emailController.text}'
-            : 'No account found with this email',
+    try {
+      final authService = context.read<AuthService>();
+      final success = await authService.resetPassword(_emailController.text);
+
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success
+                ? 'Password reset link sent to ${_emailController.text}'
+                : 'No account found with this email',
+          ),
+          backgroundColor: success ? Colors.green : Colors.red,
         ),
-        backgroundColor: success ? Colors.green : Colors.red,
-      ),
-    );
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Password reset failed: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -86,7 +145,7 @@ class _LoginPageState extends State<LoginPage> {
                   },
                 ),
               ),
-              
+
               // White container box
               Container(
                 width: _containerWidth,
@@ -96,7 +155,7 @@ class _LoginPageState extends State<LoginPage> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
+                      color: Colors.black.withValues(alpha: 0.1),
                       blurRadius: 8,
                       offset: const Offset(0, 4),
                     ),
@@ -129,7 +188,7 @@ class _LoginPageState extends State<LoginPage> {
                         },
                       ),
                       const SizedBox(height: 16),
-                      
+
                       // Password field
                       TextFormField(
                         controller: _passwordController,
@@ -152,78 +211,53 @@ class _LoginPageState extends State<LoginPage> {
                         },
                       ),
                       const SizedBox(height: 8),
-                      
+
                       // Forgot password link
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
-                          onPressed: _handleForgotPassword,
+                          onPressed: _isLoading ? null : _handleForgotPassword,
                           child: Text(
                             'Forgot Password?',
                             style: TextStyle(
-                              color: Colors.grey[700],
+                              color: Colors.pink[700],
                               fontSize: 14,
                             ),
                           ),
                         ),
                       ),
                       const SizedBox(height: 16),
-                      
+
                       // Sign in button
                       ElevatedButton(
-                        onPressed: () async {
-                          if (_formKey.currentState!.validate()) {
-                            try {
-                              _showLoadingDialog();
-                              final success = await MockAuthService.login(
-                                _emailController.text,
-                                _passwordController.text,
-                              );
-                              Navigator.pop(context);
-
-                              if (success) {
-                                Navigator.pushReplacementNamed(context, '/closet');
-                              } else {
-                                if (mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Invalid email or password'),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-                                }
-                              }
-                            } catch (e) {
-                              Navigator.pop(context);
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Login failed: ${e.toString()}'),
-                                    backgroundColor: Colors.red,
-                                  ),
-                                );
-                              }
-                            }
-                          }
-                        },
+                        onPressed: _isLoading ? null : _handleLogin,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
+                          backgroundColor: Colors.pink,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        child: const Text(
-                          'Sign In',
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                ),
+                              )
+                            : const Text(
+                                'Sign In',
+                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              ),
                       ),
                     ],
                   ),
                 ),
               ),
-              
+
               // Additional image below the box
               Container(
                 margin: const EdgeInsets.only(top: 30, bottom: 20),

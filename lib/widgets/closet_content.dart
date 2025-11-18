@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import '../models/clothing_item.dart';
-import '../data/mock_clothing_data.dart';
 import 'clothing_item_card.dart';
 
 /// Widget for displaying the closet grid content
 class ClosetContent extends StatelessWidget {
   final Function(ClothingItem) onItemTap;
-  final List<ClothingItem>? items;
+  final List<ClothingItem> items;
 
   const ClosetContent({
     super.key,
     required this.onItemTap,
-    this.items,
+    required this.items,
   });
 
   static const double _gridPadding = 16.0;
@@ -21,8 +20,6 @@ class ClosetContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final displayItems = items ?? MockClothingData.items;
-
     return Padding(
       padding: const EdgeInsets.all(_gridPadding),
       child: GridView.builder(
@@ -32,15 +29,17 @@ class ClosetContent extends StatelessWidget {
           mainAxisSpacing: _gridSpacing,
           childAspectRatio: _gridAspectRatio,
         ),
-        itemCount: displayItems.length,
+        itemCount: items.length,
+        cacheExtent: 1000, // Increase cache extent to preload more items
         itemBuilder: (context, index) {
+          final item = items[index];
           return ClothingItemCard(
-            item: displayItems[index],
-            onTap: () => onItemTap(displayItems[index]),
+            key: ValueKey(item.id), // Add key for better performance
+            item: item,
+            onTap: () => onItemTap(item),
           );
         },
       ),
     );
   }
 }
-

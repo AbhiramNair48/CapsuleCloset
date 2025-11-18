@@ -1,40 +1,28 @@
 import 'package:flutter/material.dart';
-import 'models/clothing_item.dart';
-import 'widgets/apparel_info_overlay.dart';
-import 'widgets/closet_content.dart';
-import 'screens/saved_outfits_screen.dart';
-import 'screens/friends_page.dart';
+import 'package:provider/provider.dart';
+import 'ai_chat_page.dart'; // Home tab
+import 'closet_screen.dart'; // Closet tab
+import 'friends_page.dart'; // Friends tab
+import '../services/auth_service.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-/// Main screen widget for displaying the user's digital closet
-class ClosetScreen extends StatefulWidget {
-  const ClosetScreen({super.key});
+/// Main navigation screen that handles bottom navigation
+/// This separates navigation logic from content screens
+class MainNavigationScreen extends StatefulWidget {
+  const MainNavigationScreen({super.key});
 
   @override
-  _ClosetScreenState createState() => _ClosetScreenState();
+  State<MainNavigationScreen> createState() => _MainNavigationScreenState();
 }
 
-class _ClosetScreenState extends State<ClosetScreen> with SingleTickerProviderStateMixin {
-  static const int _initialSelectedIndex = 1; // Start with Closet tab
+class _MainNavigationScreenState extends State<MainNavigationScreen> {
   static const int _homeTabIndex = 0;
   static const int _closetTabIndex = 1;
   static const int _addTabIndex = 2;
   static const int _friendsTabIndex = 3;
   static const int _settingsTabIndex = 4;
 
-  int _selectedIndex = _initialSelectedIndex;
-  late TabController _tabController;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
+  int _selectedIndex = _homeTabIndex; // Start with Home tab
 
   void _onItemTapped(int index) {
     if (index == _addTabIndex) {
@@ -103,6 +91,7 @@ class _ClosetScreenState extends State<ClosetScreen> with SingleTickerProviderSt
                 title: const Text('Logout', style: TextStyle(color: Colors.red)),
                 onTap: () {
                   Navigator.pop(context);
+                  context.read<AuthService>().logout();
                   Navigator.pushReplacementNamed(context, '/');
                 },
               ),
@@ -113,60 +102,17 @@ class _ClosetScreenState extends State<ClosetScreen> with SingleTickerProviderSt
     );
   }
 
-  void _showApparelInfo(ClothingItem item) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (BuildContext context) {
-        return ApparelInfoOverlay(
-          item: item,
-          onClose: () => Navigator.of(context).pop(),
-        );
-      },
-    );
-  }
-
   Widget _getCurrentBody() {
     switch (_selectedIndex) {
+      case _homeTabIndex:
+        return const AIChatPage();
       case _closetTabIndex:
-        return Column(
-          children: [
-            TabBar(
-              controller: _tabController,
-              tabs: const [
-                Tab(text: 'Clothes'),
-                Tab(text: 'Outfits'),
-              ],
-              labelColor: Colors.black87,
-              unselectedLabelColor: Colors.grey,
-              indicatorColor: Colors.black87,
-            ),
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  ClosetContent(
-                    onItemTap: _showApparelInfo,
-                  ),
-                  const SavedOutfitsScreen(),
-                ],
-              ),
-            ),
-          ],
-        );
+        return const ClosetScreen();
       case _friendsTabIndex:
         return const FriendsPage();
       case _addTabIndex:
         _showAddClothingDialog();
         return const SizedBox.shrink();
-      case _homeTabIndex:
-        return Center(
-          child: Text(
-            'Home',
-            style: Theme.of(context).textTheme.headlineMedium,
-          ),
-        );
       case _settingsTabIndex:
         _showSettingsDialog();
         return const SizedBox.shrink();
@@ -184,10 +130,11 @@ class _ClosetScreenState extends State<ClosetScreen> with SingleTickerProviderSt
         elevation: 0,
         centerTitle: true,
         title: Text(
-          'Your Digital Closet',
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+          'Capsule Closet',
+          style: GoogleFonts.dancingScript(
+                fontSize: 45,
                 fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                color: const Color.fromARGB(255, 247, 35, 20), // Red
               ),
         ),
       ),
@@ -198,8 +145,8 @@ class _ClosetScreenState extends State<ClosetScreen> with SingleTickerProviderSt
         type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
+            icon: Icon(Icons.chat),
+            label: 'Chat',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.checkroom),

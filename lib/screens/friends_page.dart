@@ -1,7 +1,31 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/friend.dart';
-import '../data/mock_friends_data.dart';
+import '../services/data_service.dart';
 import 'friend_closet_page.dart';
+
+// Search bar widget for the friends page
+class _FriendSearchBar extends StatelessWidget {
+  const _FriendSearchBar();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
+      child: TextField(
+        decoration: InputDecoration(
+          hintText: 'Search Friends',
+          prefixIcon: const Icon(Icons.search),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+          filled: true,
+          fillColor: Colors.white,
+        ),
+      ),
+    );
+  }
+}
 
 class FriendsPage extends StatelessWidget {
   const FriendsPage({super.key});
@@ -12,33 +36,24 @@ class FriendsPage extends StatelessWidget {
       backgroundColor: Colors.pink.shade50,
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Search Friends',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                filled: true,
-                fillColor: Colors.white,
-              ),
-            ),
-          ),
+          const _FriendSearchBar(),
           Expanded(
-            child: GridView.builder(
-              padding: const EdgeInsets.all(16.0),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                childAspectRatio: 0.85,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-              ),
-              itemCount: mockFriends.length,
-              itemBuilder: (context, index) {
-                final friend = mockFriends[index];
-                return _FriendCard(friend: friend);
+            child: Consumer<DataService>(
+              builder: (context, dataService, child) {
+                return GridView.builder(
+                  padding: const EdgeInsets.all(16.0),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.85,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                  ),
+                  itemCount: dataService.friends.length,
+                  itemBuilder: (context, index) {
+                    final friend = dataService.friends[index];
+                    return _FriendCard(friend: friend);
+                  },
+                );
               },
             ),
           ),

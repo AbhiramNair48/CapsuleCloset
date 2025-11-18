@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/outfit.dart';
-import '../data/mock_outfit_data.dart';
+import '../services/data_service.dart';
 import '../widgets/outfit_card.dart';
 import '../widgets/outfit_detail_drawer.dart';
 
@@ -9,7 +10,7 @@ class SavedOutfitsScreen extends StatefulWidget {
   const SavedOutfitsScreen({super.key});
 
   @override
-  _SavedOutfitsScreenState createState() => _SavedOutfitsScreenState();
+  State<SavedOutfitsScreen> createState() => _SavedOutfitsScreenState();
 }
 
 class _SavedOutfitsScreenState extends State<SavedOutfitsScreen> {
@@ -18,21 +19,8 @@ class _SavedOutfitsScreenState extends State<SavedOutfitsScreen> {
   static const double _gridSpacing = 16.0;
   static const double _gridAspectRatio = 1.2;
 
-  late List<Outfit> _outfits;
-
-  @override
-  void initState() {
-    super.initState();
-    _outfits = MockOutfitData.getOutfits();
-  }
-
   void _updateOutfit(Outfit updatedOutfit) {
-    setState(() {
-      final index = _outfits.indexWhere((outfit) => outfit.id == updatedOutfit.id);
-      if (index != -1) {
-        _outfits[index] = updatedOutfit;
-      }
-    });
+    context.read<DataService>().updateOutfit(updatedOutfit);
   }
 
   void _showOutfitDetails(Outfit outfit) {
@@ -51,33 +39,40 @@ class _SavedOutfitsScreenState extends State<SavedOutfitsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_outfits.isEmpty) {
-      return const Center(
-        child: Text(
-          'No saved outfits yet',
-          style: TextStyle(fontSize: 16, color: Colors.grey),
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.all(_gridPadding),
-      child: GridView.builder(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: _gridCrossAxisCount,
-          crossAxisSpacing: _gridSpacing,
-          mainAxisSpacing: _gridSpacing,
-          childAspectRatio: _gridAspectRatio,
-        ),
-        itemCount: _outfits.length,
-        itemBuilder: (context, index) {
-          return OutfitCard(
-            outfit: _outfits[index],
-            onTap: () => _showOutfitDetails(_outfits[index]),
+    return Consumer<DataService>(
+      builder: (context, dataService, child) {
+        final outfits = dataService.outfits;
+        
+        if (outfits.isEmpty) {
+          return const Center(
+            child: Text(
+              'No saved outfits yet',
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
           );
-        },
-      ),
+        }
+
+        return Padding(
+          padding: const EdgeInsets.all(_gridPadding),
+          child: GridView.builder(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: _gridCrossAxisCount,
+              crossAxisSpacing: _gridSpacing,
+              mainAxisSpacing: _gridSpacing,
+              childAspectRatio: _gridAspectRatio,
+            ),
+            itemCount: outfits.length,
+            cacheExtent: 1000, // Increase cache extent to preload more items
+            itemBuilder: (context, index) {
+              return OutfitCard(
+                key: ValueKey(outfits[index].id), // Add key for better performance
+                outfit: outfits[index],
+                onTap: () => _showOutfitDetails(outfits[index]),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
-

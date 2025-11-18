@@ -17,5 +17,52 @@ class ClothingItem {
     required this.style,
     required this.description,
   });
+
+  /// Creates a copy of this clothing item with updated fields
+  ClothingItem copyWith({
+    String? id,
+    String? imagePath,
+    String? type,
+    String? material,
+    String? color,
+    String? style,
+    String? description,
+  }) {
+    return ClothingItem(
+      id: id ?? this.id,
+      imagePath: imagePath ?? this.imagePath,
+      type: type ?? this.type,
+      material: material ?? this.material,
+      color: color ?? this.color,
+      style: style ?? this.style,
+      description: description ?? this.description,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is ClothingItem &&
+        id == other.id &&
+        imagePath == other.imagePath &&
+        type == other.type &&
+        material == other.material &&
+        color == other.color &&
+        style == other.style &&
+        description == other.description;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(
+      id,
+      imagePath,
+      type,
+      material,
+      color,
+      style,
+      description,
+    );
+  }
 }
 

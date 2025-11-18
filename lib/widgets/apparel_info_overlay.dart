@@ -13,10 +13,10 @@ class ApparelInfoOverlay extends StatefulWidget {
   });
 
   @override
-  _ApparelInfoOverlayState createState() => _ApparelInfoOverlayState();
+  State<ApparelInfoOverlay> createState() => ApparelInfoOverlayState();
 }
 
-class _ApparelInfoOverlayState extends State<ApparelInfoOverlay> {
+class ApparelInfoOverlayState extends State<ApparelInfoOverlay> {
   late TextEditingController _typeController;
   late TextEditingController _materialController;
   late TextEditingController _colorController;
