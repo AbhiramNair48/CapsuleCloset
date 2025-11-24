@@ -99,7 +99,9 @@ class OutfitPreview extends StatelessWidget {
             itemBuilder: (context, index) {
               return Container(
                 margin: const EdgeInsets.only(bottom: 8.0),
-                height: 120, // Fixed height for each image
+                constraints: const BoxConstraints(
+                  maxHeight: 175, // Limit the height to prevent very tall images
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12.0),
                   boxShadow: [
@@ -115,7 +117,7 @@ class OutfitPreview extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12.0),
                   child: Image.asset(
                     imagePaths[index],
-                    fit: BoxFit.cover,
+                    fit: BoxFit.contain,
                     frameBuilder: (BuildContext context, Widget child, int? frame, bool wasSynchronouslyLoaded) {
                       if (wasSynchronouslyLoaded) return child;
                       return AnimatedSwitcher(

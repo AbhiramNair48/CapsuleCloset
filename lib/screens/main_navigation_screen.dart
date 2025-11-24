@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'ai_chat_page.dart'; // Home tab
 import 'closet_screen.dart'; // Closet tab
 import 'friends_page.dart'; // Friends tab
+import 'upload_to_closet_page.dart'; // Add tab
 import '../services/auth_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -25,10 +26,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _selectedIndex = _homeTabIndex; // Start with Home tab
 
   void _onItemTapped(int index) {
-    if (index == _addTabIndex) {
-      _showAddClothingDialog();
-      return;
-    }
     if (index == _settingsTabIndex) {
       _showSettingsDialog();
       return;
@@ -38,27 +35,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     });
   }
 
-  void _showUnderDevelopmentDialog(String feature) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(feature),
-          content: const Text('This feature will be implemented soon!'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Close'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showAddClothingDialog() {
-    _showUnderDevelopmentDialog('Add New Item');
-  }
 
   void _showSettingsDialog() {
     showDialog(
@@ -108,11 +84,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         return const AIChatPage();
       case _closetTabIndex:
         return const ClosetScreen();
+      case _addTabIndex:
+        return const UploadToClosetPage();
       case _friendsTabIndex:
         return const FriendsPage();
-      case _addTabIndex:
-        _showAddClothingDialog();
-        return const SizedBox.shrink();
       case _settingsTabIndex:
         _showSettingsDialog();
         return const SizedBox.shrink();
