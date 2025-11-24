@@ -4,6 +4,7 @@ import 'screens/login_screen.dart';
 import 'screens/main_navigation_screen.dart'; // This is now the main screen after login
 import 'services/auth_service.dart';
 import 'services/data_service.dart';
+import 'theme/app_theme.dart';
 
 void main() {
   runApp(const MyApp());
@@ -21,29 +22,7 @@ class MyApp extends StatelessWidget {
       ],
       child: MaterialApp(
         title: 'Capsule Closet',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.pink,
-            brightness: Brightness.light,
-          ),
-          useMaterial3: true,
-          textTheme: TextTheme(
-            headlineMedium: TextStyle(
-              fontWeight: FontWeight.bold,
-              color: Colors.black87,
-            ),
-            labelLarge: TextStyle(
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          inputDecorationTheme: InputDecorationTheme(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            filled: true,
-            fillColor: Colors.white,
-          ),
-        ),
+        theme: AppTheme.lightTheme,
         initialRoute: '/',
         routes: {
           '/': (context) => const LoginScreen(),

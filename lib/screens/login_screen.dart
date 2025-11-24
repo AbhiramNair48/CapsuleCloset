@@ -212,33 +212,61 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 8),
 
-                      // Forgot password link
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: _isLoading ? null : _handleForgotPassword,
-                          child: Text(
-                            'Forgot Password?',
-                            style: TextStyle(
-                              color: Colors.pink[700],
-                              fontSize: 14,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
+                                              // Forgot password link
 
-                      // Sign in button
-                      ElevatedButton(
-                        onPressed: _isLoading ? null : _handleLogin,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.pink,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
+                                            Align(
+
+                                              alignment: Alignment.centerRight,
+
+                                              child: TextButton(
+
+                                                onPressed: _isLoading ? null : _handleForgotPassword,
+
+                                                child: Text(
+
+                                                  'Forgot Password?',
+
+                                                  style: TextStyle(
+
+                                                    color: Theme.of(context).colorScheme.primary,
+
+                                                    fontSize: 14,
+
+                                                  ),
+
+                                                ),
+
+                                              ),
+
+                                            ),
+
+                                            const SizedBox(height: 16),
+
+                      
+
+                                            // Sign in button
+
+                                            ElevatedButton(
+
+                                              onPressed: _isLoading ? null : _handleLogin,
+
+                                              style: ElevatedButton.styleFrom(
+
+                                                backgroundColor: Theme.of(context).colorScheme.primary,
+
+                                                foregroundColor: Theme.of(context).colorScheme.onPrimary,
+
+                                                padding: const EdgeInsets.symmetric(vertical: 16),
+
+                                                shape: RoundedRectangleBorder(
+
+                                                  borderRadius: BorderRadius.circular(8),
+
+                                                ),
+
+                                              ),
+
+                      
                         child: _isLoading
                             ? const SizedBox(
                                 width: 20,

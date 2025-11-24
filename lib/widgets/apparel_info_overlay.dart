@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/clothing_item.dart';
+import '../services/data_service.dart';
 
 /// Widget for displaying apparel information in a bottom sheet overlay
 class ApparelInfoOverlay extends StatefulWidget {
@@ -50,6 +52,25 @@ class ApparelInfoOverlayState extends State<ApparelInfoOverlay> {
     _styleController.dispose();
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  void _saveChanges() {
+    final updatedItem = widget.item.copyWith(
+      type: _typeController.text,
+      material: _materialController.text,
+      color: _colorController.text,
+      style: _styleController.text,
+      description: _descriptionController.text,
+    );
+
+    context.read<DataService>().updateClothingItem(updatedItem);
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Changes saved successfully')),
+      );
+      widget.onClose();
+    }
   }
 
   @override
@@ -104,6 +125,26 @@ class ApparelInfoOverlayState extends State<ApparelInfoOverlay> {
                 _buildTextField('Style', _styleController),
                 const SizedBox(height: _spacing),
                 _buildTextField('Description', _descriptionController, maxLines: 4),
+                const SizedBox(height: _padding),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _saveChanges,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(_textFieldBorderRadius),
+                      ),
+                    ),
+                    child: const Text(
+                      'Save Changes',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: _padding),
               ],
             ),
           );
@@ -126,7 +167,6 @@ class ApparelInfoOverlayState extends State<ApparelInfoOverlay> {
         TextField(
           controller: controller,
           maxLines: maxLines,
-          readOnly: true,
           decoration: InputDecoration(
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(_textFieldBorderRadius),
