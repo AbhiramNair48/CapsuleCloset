@@ -187,6 +187,7 @@ class _InputArea extends StatelessWidget {
 class _AIChatPageState extends State<AIChatPage> {
   // Controller for the text input field
   final TextEditingController _textController = TextEditingController();
+  final ScrollController _scrollController = ScrollController(); // Add ScrollController
 
   @override
   void initState() {
@@ -199,7 +200,26 @@ class _AIChatPageState extends State<AIChatPage> {
         aiService.updateContext(dataService.clothingItems);
         aiService.startChat();
       }
+      // Listen for changes in messages and scroll to bottom
+      aiService.addListener(_scrollDown);
     });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose(); // Dispose controller to avoid memory leaks
+    context.read<AIService>().removeListener(_scrollDown); // Remove listener
+    super.dispose();
+  }
+
+  void _scrollDown() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 
   @override
@@ -215,6 +235,7 @@ class _AIChatPageState extends State<AIChatPage> {
                 child: Padding(
                   padding: const EdgeInsets.only(top: 16.0, left: 8.0, right: 8.0),
                   child: ListView.builder(
+                    controller: _scrollController, // Assign the controller
                     reverse: false, // Keep messages in chronological order
                     padding: const EdgeInsets.only(bottom: 10), // Add space for input area
                     itemCount: aiService.messages.length,
