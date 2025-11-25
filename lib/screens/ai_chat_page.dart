@@ -208,47 +208,6 @@ class _AIChatPageState extends State<AIChatPage> {
       backgroundColor: Colors.pink.shade50,
       body: Consumer<AIService>(
         builder: (context, aiService, child) {
-          if (!aiService.hasApiKey) {
-            return Center(
-              child: Card(
-                margin: const EdgeInsets.all(16.0),
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.vpn_key, size: 48, color: Colors.amber),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Gemini API Key Required',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Please enter your Google Gemini API key to use the AI stylist.',
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 24),
-                      TextField(
-                        decoration: const InputDecoration(
-                          labelText: 'API Key',
-                          border: OutlineInputBorder(),
-                        ),
-                        onSubmitted: (value) {
-                          aiService.setApiKey(value.trim());
-                          // Initialize context after setting key
-                          final dataService = context.read<DataService>();
-                          aiService.updateContext(dataService.clothingItems);
-                          aiService.startChat();
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }
-
           return Column(
             children: [
               // Chat messages list with top padding for spacing from app bar
