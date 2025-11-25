@@ -122,3 +122,4 @@ app.*.symbols
 AGENTS.md
 .gemini/
 gha-creds-*.json
+.env

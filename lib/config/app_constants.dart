@@ -1,8 +1,9 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 /// Application constants and configuration
 class AppConstants {
-  // TODO: Replace this with your actual Gemini API Key.
-  // Go to https://aistudio.google.com/ to get your key.
-  static const String geminiApiKey = 'YOUR_API_KEY_HERE';
+  // Retrieves the API key from the .env file
+  static String get geminiApiKey => dotenv.env['GEMINI_API_KEY'] ?? '';
   
   // The Gemini Model to use
   // Using gemini-1.5-pro as the current stable "Pro" model. 

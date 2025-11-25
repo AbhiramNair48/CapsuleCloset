@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'screens/login_screen.dart';
 import 'screens/main_navigation_screen.dart'; // This is now the main screen after login
 import 'services/auth_service.dart';
@@ -7,7 +8,8 @@ import 'services/data_service.dart';
 import 'services/ai_service.dart';
 import 'theme/app_theme.dart';
 
-void main() {
+Future<void> main() async {
+  await dotenv.load(fileName: ".env");
   runApp(const MyApp());
 }
 
