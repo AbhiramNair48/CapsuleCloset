@@ -5,7 +5,6 @@ import 'closet_screen.dart'; // Closet tab
 import 'friends_page.dart'; // Friends tab
 import 'upload_to_closet_page.dart'; // Add tab
 import '../services/auth_service.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// Main navigation screen that handles bottom navigation
 /// This separates navigation logic from content screens
@@ -96,51 +95,90 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.pink.shade50,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: true,
-        title: Text(
-          'Capsule Closet',
-          style: GoogleFonts.dancingScript(
-                fontSize: 45,
-                fontWeight: FontWeight.bold,
-                color: const Color.fromARGB(255, 247, 35, 20), // Red
-              ),
+    @override
+
+    Widget build(BuildContext context) {
+
+      return Scaffold(
+
+        // Background color is handled by the theme's scaffoldBackgroundColor
+
+        appBar: AppBar(
+
+          title: const Text('Capsule Closet'),
+
+          // AppBar styles are now handled by the theme
+
         ),
-      ),
-      body: _getCurrentBody(),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat),
-            label: 'Chat',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.checkroom),
-            label: 'Closet',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.add),
-            label: 'Add',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Friends',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: 'Settings',
-          ),
-        ],
-      ),
-    );
+
+        body: _getCurrentBody(),
+
+        bottomNavigationBar: NavigationBar(
+
+          selectedIndex: _selectedIndex,
+
+          onDestinationSelected: _onItemTapped,
+
+          destinations: const [
+
+            NavigationDestination(
+
+              icon: Icon(Icons.chat_outlined),
+
+              selectedIcon: Icon(Icons.chat),
+
+              label: 'Chat',
+
+            ),
+
+            NavigationDestination(
+
+              icon: Icon(Icons.checkroom_outlined),
+
+              selectedIcon: Icon(Icons.checkroom),
+
+              label: 'Closet',
+
+            ),
+
+            NavigationDestination(
+
+              icon: Icon(Icons.add_circle_outline),
+
+              selectedIcon: Icon(Icons.add_circle),
+
+              label: 'Add',
+
+            ),
+
+            NavigationDestination(
+
+              icon: Icon(Icons.group_outlined),
+
+              selectedIcon: Icon(Icons.group),
+
+              label: 'Friends',
+
+            ),
+
+            NavigationDestination(
+
+              icon: Icon(Icons.settings_outlined),
+
+              selectedIcon: Icon(Icons.settings),
+
+              label: 'Settings',
+
+            ),
+
+          ],
+
+        ),
+
+      );
+
+    }
+
   }
-}
+
+  

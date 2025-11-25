@@ -13,35 +13,54 @@ class FriendClosetPage extends StatelessWidget {
     required this.friendName,
   });
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.pink.shade50,
-      appBar: AppBar(
-        title: Text(
-          friendName,
-          style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
+    @override
+
+    Widget build(BuildContext context) {
+
+      return Scaffold(
+
+        // Background color handled by theme
+
+        appBar: AppBar(
+
+          title: Text(friendName), // Style handled by app_theme.dart
+
+          backgroundColor: Colors.transparent,
+
         ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: ClosetContent(
-        items: closetItems,
-        onItemTap: (item) {
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent,
-            builder: (context) => ApparelInfoOverlay(
-              item: item,
-              onClose: () => Navigator.of(context).pop(),
-            ),
-          );
-        },
-      ),
-    );
+
+        body: ClosetContent(
+
+          items: closetItems,
+
+          onItemTap: (item) {
+
+            showModalBottomSheet(
+
+              context: context,
+
+              isScrollControlled: true,
+
+              backgroundColor: Colors.transparent,
+
+              builder: (context) => ApparelInfoOverlay(
+
+                item: item,
+
+                onClose: () => Navigator.of(context).pop(),
+
+              ),
+
+            );
+
+          },
+
+        ),
+
+      );
+
+    }
+
   }
-}
+
+  

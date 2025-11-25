@@ -4,6 +4,7 @@ import 'screens/login_screen.dart';
 import 'screens/main_navigation_screen.dart'; // This is now the main screen after login
 import 'services/auth_service.dart';
 import 'services/data_service.dart';
+import 'services/ai_service.dart';
 import 'theme/app_theme.dart';
 
 void main() {
@@ -19,6 +20,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => DataService()),
+        ChangeNotifierProvider(create: (_) => AIService()),
       ],
       child: MaterialApp(
         title: 'Capsule Closet',

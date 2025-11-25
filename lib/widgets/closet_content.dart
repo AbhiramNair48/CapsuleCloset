@@ -13,33 +13,57 @@ class ClosetContent extends StatelessWidget {
     required this.items,
   });
 
-  static const double _gridPadding = 16.0;
-  static const int _gridCrossAxisCount = 2;
-  static const double _gridSpacing = 16.0;
-  static const double _gridAspectRatio = 0.8;
+    static const double _gridPadding = 16.0;
+    static const double _gridSpacing = 16.0;
+    static const double _gridAspectRatio = 0.8;
+  
+    @override
+      Widget build(BuildContext context) {
 
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(_gridPadding),
-      child: GridView.builder(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: _gridCrossAxisCount,
-          crossAxisSpacing: _gridSpacing,
-          mainAxisSpacing: _gridSpacing,
-          childAspectRatio: _gridAspectRatio,
+      return Padding(
+
+        padding: const EdgeInsets.all(_gridPadding),
+
+        child: GridView.builder(
+
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+
+            maxCrossAxisExtent: 200,
+
+            crossAxisSpacing: _gridSpacing,
+
+            mainAxisSpacing: _gridSpacing,
+
+            childAspectRatio: _gridAspectRatio,
+
+          ),
+
+          itemCount: items.length,
+
+          cacheExtent: 1000, // Increase cache extent to preload more items
+
+          itemBuilder: (context, index) {
+
+            final item = items[index];
+
+            return ClothingItemCard(
+
+              key: ValueKey(item.id), // Add key for better performance
+
+              item: item,
+
+              onTap: () => onItemTap(item),
+
+            );
+
+          },
+
         ),
-        itemCount: items.length,
-        cacheExtent: 1000, // Increase cache extent to preload more items
-        itemBuilder: (context, index) {
-          final item = items[index];
-          return ClothingItemCard(
-            key: ValueKey(item.id), // Add key for better performance
-            item: item,
-            onTap: () => onItemTap(item),
-          );
-        },
-      ),
-    );
+
+      );
+
+    }
+
   }
-}
+
+  

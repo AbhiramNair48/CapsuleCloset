@@ -12,42 +12,28 @@ class OutfitCard extends StatelessWidget {
     required this.onTap,
   });
 
-  static const double _cardBorderRadius = 12.0;
   static const double _imageSpacing = 2.0;
   static const double _errorIconSize = 30.0;
   static const int _maxItemsInCollage = 4;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(_cardBorderRadius),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.3),
-              spreadRadius: 1,
-              blurRadius: 5,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Expanded(
               child: _buildCollage(),
             ),
-            Padding(
+            Container(
+              color: Theme.of(context).colorScheme.surface,
               padding: const EdgeInsets.all(8.0),
               child: Text(
                 outfit.name,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: Theme.of(context).textTheme.labelLarge,
                 textAlign: TextAlign.center,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -66,13 +52,7 @@ class OutfitCard extends StatelessWidget {
 
     if (displayCount == 0) {
       return Container(
-        decoration: const BoxDecoration(
-          color: Colors.grey,
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(_cardBorderRadius),
-            topRight: Radius.circular(_cardBorderRadius),
-          ),
-        ),
+        color: Colors.grey.shade200,
         child: const Center(
           child: Icon(Icons.image_not_supported, size: _errorIconSize),
         ),
@@ -80,35 +60,15 @@ class OutfitCard extends StatelessWidget {
     }
 
     if (displayCount == 1) {
-      return ClipRRect(
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(_cardBorderRadius),
-          topRight: Radius.circular(_cardBorderRadius),
-        ),
-        child: _buildImage(items[0].imagePath),
-      );
+      return _buildImage(items[0].imagePath);
     }
 
     if (displayCount == 2) {
       return Row(
         children: [
-          Expanded(
-            child: ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(_cardBorderRadius),
-              ),
-              child: _buildImage(items[0].imagePath),
-            ),
-          ),
+          Expanded(child: _buildImage(items[0].imagePath)),
           SizedBox(width: _imageSpacing),
-          Expanded(
-            child: ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topRight: Radius.circular(_cardBorderRadius),
-              ),
-              child: _buildImage(items[1].imagePath),
-            ),
-          ),
+          Expanded(child: _buildImage(items[1].imagePath)),
         ],
       );
     }
@@ -120,35 +80,15 @@ class OutfitCard extends StatelessWidget {
             flex: 2,
             child: Row(
               children: [
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(_cardBorderRadius),
-                    ),
-                    child: _buildImage(items[0].imagePath),
-                  ),
-                ),
+                Expanded(child: _buildImage(items[0].imagePath)),
                 SizedBox(width: _imageSpacing),
-                Expanded(
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      topRight: Radius.circular(_cardBorderRadius),
-                    ),
-                    child: _buildImage(items[1].imagePath),
-                  ),
-                ),
+                Expanded(child: _buildImage(items[1].imagePath)),
               ],
             ),
           ),
           SizedBox(height: _imageSpacing),
           Expanded(
-            child: ClipRRect(
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(_cardBorderRadius),
-                bottomRight: Radius.circular(_cardBorderRadius),
-              ),
-              child: _buildImage(items[2].imagePath),
-            ),
+            child: _buildImage(items[2].imagePath),
           ),
         ],
       );
@@ -160,23 +100,9 @@ class OutfitCard extends StatelessWidget {
         Expanded(
           child: Row(
             children: [
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(_cardBorderRadius),
-                  ),
-                  child: _buildImage(items[0].imagePath),
-                ),
-              ),
+              Expanded(child: _buildImage(items[0].imagePath)),
               SizedBox(width: _imageSpacing),
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topRight: Radius.circular(_cardBorderRadius),
-                  ),
-                  child: _buildImage(items[1].imagePath),
-                ),
-              ),
+              Expanded(child: _buildImage(items[1].imagePath)),
             ],
           ),
         ),
@@ -185,43 +111,29 @@ class OutfitCard extends StatelessWidget {
           child: Row(
             children: [
               Expanded(
-                child: ClipRRect(
-                  borderRadius: itemCount > _maxItemsInCollage
-                      ? BorderRadius.zero
-                      : const BorderRadius.only(
-                          bottomLeft: Radius.circular(_cardBorderRadius),
-                        ),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      _buildImage(items[2].imagePath),
-                      if (itemCount > _maxItemsInCollage)
-                        Container(
-                          color: Colors.black54,
-                          child: Center(
-                            child: Text(
-                              '+${itemCount - _maxItemsInCollage}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                              ),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    _buildImage(items[2].imagePath),
+                    if (itemCount > _maxItemsInCollage)
+                      Container(
+                        color: Colors.black54,
+                        child: Center(
+                          child: Text(
+                            '+${itemCount - _maxItemsInCollage}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
-                    ],
-                  ),
+                      ),
+                  ],
                 ),
               ),
               SizedBox(width: _imageSpacing),
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    bottomRight: Radius.circular(_cardBorderRadius),
-                  ),
-                  child: _buildImage(items[3].imagePath),
-                ),
-              ),
+              Expanded(child: _buildImage(items[3].imagePath)),
             ],
           ),
         ),

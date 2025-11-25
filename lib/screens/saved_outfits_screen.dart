@@ -15,7 +15,6 @@ class SavedOutfitsScreen extends StatefulWidget {
 
 class _SavedOutfitsScreenState extends State<SavedOutfitsScreen> {
   static const double _gridPadding = 16.0;
-  static const int _gridCrossAxisCount = 2;
   static const double _gridSpacing = 16.0;
   static const double _gridAspectRatio = 1.2;
 
@@ -37,42 +36,108 @@ class _SavedOutfitsScreenState extends State<SavedOutfitsScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Consumer<DataService>(
-      builder: (context, dataService, child) {
-        final outfits = dataService.outfits;
-        
-        if (outfits.isEmpty) {
-          return const Center(
-            child: Text(
-              'No saved outfits yet',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-          );
-        }
+    @override
 
-        return Padding(
-          padding: const EdgeInsets.all(_gridPadding),
-          child: GridView.builder(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: _gridCrossAxisCount,
-              crossAxisSpacing: _gridSpacing,
-              mainAxisSpacing: _gridSpacing,
-              childAspectRatio: _gridAspectRatio,
+    Widget build(BuildContext context) {
+
+      return Consumer<DataService>(
+
+        builder: (context, dataService, child) {
+
+          final outfits = dataService.outfits;
+
+          
+
+          if (outfits.isEmpty) {
+
+            return Center(
+
+              child: Column(
+
+                mainAxisAlignment: MainAxisAlignment.center,
+
+                children: [
+
+                  Icon(
+
+                    Icons.checkroom_outlined,
+
+                    size: 64,
+
+                    color: Theme.of(context).colorScheme.secondary,
+
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  Text(
+
+                    'No saved outfits yet',
+
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+
+                    ),
+
+                  ),
+
+                ],
+
+              ),
+
+            );
+
+          }
+
+  
+
+          return Padding(
+
+            padding: const EdgeInsets.all(_gridPadding),
+
+            child: GridView.builder(
+
+              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+
+                maxCrossAxisExtent: 200,
+
+                crossAxisSpacing: _gridSpacing,
+
+                mainAxisSpacing: _gridSpacing,
+
+                childAspectRatio: _gridAspectRatio,
+
+              ),
+
+              itemCount: outfits.length,
+
+              cacheExtent: 1000, // Increase cache extent to preload more items
+
+              itemBuilder: (context, index) {
+
+                return OutfitCard(
+
+                  key: ValueKey(outfits[index].id), // Add key for better performance
+
+                  outfit: outfits[index],
+
+                  onTap: () => _showOutfitDetails(outfits[index]),
+
+                );
+
+              },
+
             ),
-            itemCount: outfits.length,
-            cacheExtent: 1000, // Increase cache extent to preload more items
-            itemBuilder: (context, index) {
-              return OutfitCard(
-                key: ValueKey(outfits[index].id), // Add key for better performance
-                outfit: outfits[index],
-                onTap: () => _showOutfitDetails(outfits[index]),
-              );
-            },
-          ),
-        );
-      },
-    );
+
+          );
+
+        },
+
+      );
+
+    }
+
   }
-}
+
+  

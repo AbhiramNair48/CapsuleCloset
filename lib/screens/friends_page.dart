@@ -11,17 +11,15 @@ class _FriendSearchBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
-      child: TextField(
-        decoration: InputDecoration(
-          hintText: 'Search Friends',
-          prefixIcon: const Icon(Icons.search),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(30),
-          ),
-          filled: true,
-          fillColor: Colors.white,
+      padding: const EdgeInsets.all(16.0),
+      child: SearchBar(
+        hintText: 'Search Friends',
+        leading: const Icon(Icons.search),
+        padding: WidgetStateProperty.all(
+          const EdgeInsets.symmetric(horizontal: 16.0),
         ),
+        elevation: WidgetStateProperty.all(2.0),
+        backgroundColor: WidgetStateProperty.all(Colors.white),
       ),
     );
   }
@@ -33,7 +31,7 @@ class FriendsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.pink.shade50,
+      // Background handled by theme
       body: Column(
         children: [
           const _FriendSearchBar(),
@@ -42,8 +40,8 @@ class FriendsPage extends StatelessWidget {
               builder: (context, dataService, child) {
                 return GridView.builder(
                   padding: const EdgeInsets.all(16.0),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
+                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 250,
                     childAspectRatio: 0.85,
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
