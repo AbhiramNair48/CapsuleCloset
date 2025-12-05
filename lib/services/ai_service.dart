@@ -26,12 +26,16 @@ class AIService extends ChangeNotifier {
   List<Message> get messages => List.unmodifiable(_messages);
   bool get isLoading => _isLoading;
 
-  AIService() {
+  // Store closet items to map AI responses back to images
+  List<ClothingItem> _closetItems = [];
+  final String? _explicitApiKey;
+
+  AIService({String? apiKey}) : _explicitApiKey = apiKey {
     _initModel();
   }
 
   void _initModel() {
-    final apiKey = AppConstants.geminiApiKey;
+    final apiKey = _explicitApiKey ?? AppConstants.geminiApiKey;
     
     if (apiKey.isNotEmpty && apiKey != 'YOUR_API_KEY_HERE') {
       _model = GenerativeModel(
@@ -81,7 +85,12 @@ class AIService extends ChangeNotifier {
       final responseText = response.text;
 
       if (responseText != null) {
-        _messages.add(Message(text: responseText, isUser: false));
+        final extractionResult = processResponse(responseText);
+        _messages.add(Message(
+          text: extractionResult.cleanText, 
+          isUser: false, 
+          imagePaths: extractionResult.imagePaths
+        ));
       } else {
         _messages.add(Message(text: "I'm sorry, I didn't understand that.", isUser: false));
       }
@@ -95,7 +104,9 @@ class AIService extends ChangeNotifier {
   
   // A method to explicitly feed context if we want to restart the chat with context
   void updateContext(List<ClothingItem> items) {
-    final apiKey = AppConstants.geminiApiKey;
+    _closetItems = items; // Store items for image lookup
+    
+    final apiKey = _explicitApiKey ?? AppConstants.geminiApiKey;
     if (apiKey.isEmpty || apiKey == 'YOUR_API_KEY_HERE') return;
 
     final inventoryString = InventoryFormatter.formatInventory(items);
@@ -109,5 +120,60 @@ class AIService extends ChangeNotifier {
     
     // Reset chat session with new model/instruction
     _chatSession = _model!.startChat();
+  }
+
+  /// Processes the response to extract IDs and clean the text.
+  @visibleForTesting
+  ({String cleanText, List<String> imagePaths}) processResponse(String text) {
+    final List<String> paths = [];
+    
+    // Regex to find <<ID:some_id>>
+    final RegExp idRegex = RegExp(r'<<ID:([^>]+)>>');
+
+    // 1. Identify the "What to wear" section to restrict extraction
+    String sectionText = text;
+    final lowerText = text.toLowerCase();
+    // Assumes standard formatting from prompt
+    // Use a slightly flexible search in case of minor formatting variations
+    int startIndex = lowerText.indexOf('what to wear');
+    
+    if (startIndex != -1) {
+       // Move start index to after the title
+       startIndex += 'what to wear'.length;
+       
+       // Find the end of the section (next bold header starting with **)
+       // We look for ** starting after the current section
+       int endIndex = text.indexOf('**', startIndex + 5); // +5 to skip potential formatting chars around title
+       
+       if (endIndex != -1) {
+         sectionText = text.substring(startIndex, endIndex);
+       } else {
+         sectionText = text.substring(startIndex);
+       }
+    }
+
+    // 2. Extract IDs only from the section text
+    final matches = idRegex.allMatches(sectionText);
+    for (final match in matches) {
+      final id = match.group(1)?.trim();
+      if (id != null) {
+        // Find item with this ID
+        try {
+          final item = _closetItems.firstWhere((item) => item.id == id);
+          // Avoid duplicates
+          if (!paths.contains(item.imagePath)) {
+            paths.add(item.imagePath);
+          }
+        } catch (e) {
+          // Item not found, ignore
+          debugPrint('AI suggested item ID $id which was not found in context.');
+        }
+      }
+    }
+
+    // 3. Clean tags from the ENTIRE text
+    String cleanText = text.replaceAll(idRegex, '');
+    
+    return (cleanText: cleanText, imagePaths: paths);
   }
 }

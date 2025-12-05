@@ -6,12 +6,13 @@ class Friend {
   final List<ClothingItem> previewItems;
   final List<ClothingItem> closetItems;
 
-  const Friend({
+  Friend({
     required this.id,
     required this.name,
-    required this.previewItems,
-    required this.closetItems,
-  });
+    required List<ClothingItem> previewItems,
+    required List<ClothingItem> closetItems,
+  })  : previewItems = previewItems.map((item) => item.copyWith(isEditable: false)).toList(),
+        closetItems = closetItems.map((item) => item.copyWith(isEditable: false)).toList();
 
   /// Creates a copy of this friend with updated fields
   Friend copyWith({
