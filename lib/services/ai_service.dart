@@ -9,11 +9,13 @@ class Message {
   final String text;
   final bool isUser;
   final List<String>? imagePaths;
+  final List<String>? itemIds;
 
   Message({
     required this.text,
     required this.isUser,
     this.imagePaths,
+    this.itemIds,
   });
 }
 
@@ -89,7 +91,8 @@ class AIService extends ChangeNotifier {
         _messages.add(Message(
           text: extractionResult.cleanText, 
           isUser: false, 
-          imagePaths: extractionResult.imagePaths
+          imagePaths: extractionResult.imagePaths,
+          itemIds: extractionResult.itemIds,
         ));
       } else {
         _messages.add(Message(text: "I'm sorry, I didn't understand that.", isUser: false));
@@ -124,8 +127,9 @@ class AIService extends ChangeNotifier {
 
   /// Processes the response to extract IDs and clean the text.
   @visibleForTesting
-  ({String cleanText, List<String> imagePaths}) processResponse(String text) {
+  ({String cleanText, List<String> imagePaths, List<String> itemIds}) processResponse(String text) {
     final List<String> paths = [];
+    final List<String> ids = [];
     
     // Regex to find <<ID:some_id>>
     final RegExp idRegex = RegExp(r'<<ID:([^>]+)>>');
@@ -163,6 +167,7 @@ class AIService extends ChangeNotifier {
           // Avoid duplicates
           if (!paths.contains(item.imagePath)) {
             paths.add(item.imagePath);
+            ids.add(item.id);
           }
         } catch (e) {
           // Item not found, ignore
@@ -174,6 +179,6 @@ class AIService extends ChangeNotifier {
     // 3. Clean tags from the ENTIRE text
     String cleanText = text.replaceAll(idRegex, '');
     
-    return (cleanText: cleanText, imagePaths: paths);
+    return (cleanText: cleanText, imagePaths: paths, itemIds: ids);
   }
 }

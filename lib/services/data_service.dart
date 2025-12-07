@@ -102,4 +102,10 @@ class DataService extends ChangeNotifier {
   List<ClothingItem> getClothingItemsByMaterial(String material) {
     return _clothingItems.where((item) => item.material == material).toList();
   }
+
+  /// Remove a friend by ID
+  void removeFriend(String id) {
+    _friends.removeWhere((friend) => friend.id == id);
+    notifyListeners();
+  }
 }

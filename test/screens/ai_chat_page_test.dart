@@ -31,12 +31,12 @@ class MockAIService extends ChangeNotifier implements AIService {
   }
 
   @override
-  ({String cleanText, List<String> imagePaths}) processResponse(String text) {
-    return (cleanText: text, imagePaths: <String>[]);
+  ({String cleanText, List<String> imagePaths, List<String> itemIds}) processResponse(String text) {
+    return (cleanText: text, imagePaths: <String>[], itemIds: <String>[]);
   }
 
-  void addBotMessage(String text, {List<String>? imagePaths}) {
-    _messages.add(Message(text: text, isUser: false, imagePaths: imagePaths));
+  void addBotMessage(String text, {List<String>? imagePaths, List<String>? itemIds}) {
+    _messages.add(Message(text: text, isUser: false, imagePaths: imagePaths, itemIds: itemIds));
     notifyListeners();
   }
 
@@ -83,6 +83,8 @@ class MockDataService extends ChangeNotifier implements DataService {
   void updateOutfit(Outfit updatedOutfit) {}
   @override
   void removeOutfit(String id) {}
+  @override
+  void removeFriend(String id) {}
   @override
   List<ClothingItem> getClothingItemsByType(String type) => [];
   @override
