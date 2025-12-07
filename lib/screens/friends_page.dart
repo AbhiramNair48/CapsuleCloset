@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/friend.dart';
 import '../services/data_service.dart';
 import 'friend_closet_page.dart';
+import 'delete_friends_screen.dart';
 
 // Search bar widget for the friends page
 class _FriendSearchBar extends StatelessWidget {
@@ -31,7 +32,18 @@ class FriendsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Background handled by theme
+      backgroundColor: Colors.transparent,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const DeleteFriendsScreen(),
+            ),
+          );
+        },
+        child: const Icon(Icons.person_remove_outlined),
+      ),
       body: Column(
         children: [
           const _FriendSearchBar(),

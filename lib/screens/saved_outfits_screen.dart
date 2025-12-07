@@ -4,6 +4,7 @@ import '../models/outfit.dart';
 import '../services/data_service.dart';
 import '../widgets/outfit_card.dart';
 import '../widgets/outfit_detail_drawer.dart';
+import 'delete_outfits_screen.dart';
 
 /// Screen for displaying saved outfits
 class SavedOutfitsScreen extends StatefulWidget {
@@ -40,100 +41,114 @@ class _SavedOutfitsScreenState extends State<SavedOutfitsScreen> {
 
     Widget build(BuildContext context) {
 
-      return Consumer<DataService>(
+      return Scaffold(
+        backgroundColor: Colors.transparent, // Inherit background from parent
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const DeleteOutfitsScreen(),
+              ),
+            );
+          },
+          child: const Icon(Icons.delete_outline),
+        ),
+        body: Consumer<DataService>(
 
-        builder: (context, dataService, child) {
+          builder: (context, dataService, child) {
 
-          final outfits = dataService.outfits;
+            final outfits = dataService.outfits;
 
-          
+            
 
-          if (outfits.isEmpty) {
+            if (outfits.isEmpty) {
 
-            return Center(
+              return Center(
 
-              child: Column(
+                child: Column(
 
-                mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisAlignment: MainAxisAlignment.center,
 
-                children: [
+                  children: [
 
-                  Icon(
+                    Icon(
 
-                    Icons.checkroom_outlined,
+                      Icons.checkroom_outlined,
 
-                    size: 64,
+                      size: 64,
 
-                    color: Theme.of(context).colorScheme.secondary,
-
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  Text(
-
-                    'No saved outfits yet',
-
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      color: Theme.of(context).colorScheme.secondary,
 
                     ),
 
-                  ),
+                    const SizedBox(height: 16),
 
-                ],
+                    Text(
+
+                      'No saved outfits yet',
+
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+
+                      ),
+
+                    ),
+
+                  ],
+
+                ),
+
+              );
+
+            }
+
+    
+
+            return Padding(
+
+              padding: const EdgeInsets.all(_gridPadding),
+
+              child: GridView.builder(
+
+                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+
+                  maxCrossAxisExtent: 200,
+
+                  crossAxisSpacing: _gridSpacing,
+
+                  mainAxisSpacing: _gridSpacing,
+
+                  childAspectRatio: _gridAspectRatio,
+
+                ),
+
+                itemCount: outfits.length,
+
+                cacheExtent: 1000, // Increase cache extent to preload more items
+
+                itemBuilder: (context, index) {
+
+                  return OutfitCard(
+
+                    key: ValueKey(outfits[index].id), // Add key for better performance
+
+                    outfit: outfits[index],
+
+                    onTap: () => _showOutfitDetails(outfits[index]),
+
+                  );
+
+                },
 
               ),
 
             );
 
-          }
+          },
 
-  
-
-          return Padding(
-
-            padding: const EdgeInsets.all(_gridPadding),
-
-            child: GridView.builder(
-
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-
-                maxCrossAxisExtent: 200,
-
-                crossAxisSpacing: _gridSpacing,
-
-                mainAxisSpacing: _gridSpacing,
-
-                childAspectRatio: _gridAspectRatio,
-
-              ),
-
-              itemCount: outfits.length,
-
-              cacheExtent: 1000, // Increase cache extent to preload more items
-
-              itemBuilder: (context, index) {
-
-                return OutfitCard(
-
-                  key: ValueKey(outfits[index].id), // Add key for better performance
-
-                  outfit: outfits[index],
-
-                  onTap: () => _showOutfitDetails(outfits[index]),
-
-                );
-
-              },
-
-            ),
-
-          );
-
-        },
-
+        ),
       );
 
     }

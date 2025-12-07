@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/ai_service.dart';
 import '../services/data_service.dart';
+import '../models/outfit.dart';
 
 /// ChatBubble widget for displaying messages in the chat interface
 /// Supports both user and bot messages with different styling
@@ -86,10 +87,12 @@ class ChatBubble extends StatelessWidget {
 /// Shows a list of outfit images in a vertical layout
 class OutfitPreview extends StatelessWidget {
   final List<String> imagePaths;
+  final List<String> itemIds;
 
   const OutfitPreview({
     super.key,
     required this.imagePaths,
+    this.itemIds = const [],
   });
 
   @override
@@ -137,6 +140,41 @@ class OutfitPreview extends StatelessWidget {
               );
             },
           ),
+          if (itemIds.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    final dataService = context.read<DataService>();
+                    final items = dataService.clothingItems
+                        .where((item) => itemIds.contains(item.id))
+                        .toList();
+
+                    if (items.isNotEmpty) {
+                      final now = DateTime.now();
+                      final newOutfit = Outfit(
+                        id: now.millisecondsSinceEpoch.toString(),
+                        name: "${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}-${now.year}",
+                        items: items,
+                        savedDate: now,
+                      );
+                      dataService.addOutfit(newOutfit);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Outfit saved to closet!')),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Could not find these items in your closet.')),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.checkroom),
+                  label: const Text('Save Outfit'),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -290,6 +328,7 @@ class _AIChatPageState extends State<AIChatPage> {
                               padding: const EdgeInsets.only(top: 8.0),
                               child: OutfitPreview(
                                 imagePaths: message.imagePaths!,
+                                itemIds: message.itemIds ?? [],
                               ),
                             ),
                         ],
