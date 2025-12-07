@@ -4,6 +4,7 @@ import '../models/clothing_item.dart';
 import '../config/app_constants.dart';
 import 'prompts.dart';
 import 'inventory_formatter.dart';
+import '../models/user_profile.dart';
 
 class Message {
   final String text;
@@ -106,14 +107,16 @@ class AIService extends ChangeNotifier {
   }
   
   // A method to explicitly feed context if we want to restart the chat with context
-  void updateContext(List<ClothingItem> items) {
+  void updateContext(List<ClothingItem> items, UserProfile userProfile) {
     _closetItems = items; // Store items for image lookup
     
     final apiKey = _explicitApiKey ?? AppConstants.geminiApiKey;
     if (apiKey.isEmpty || apiKey == 'YOUR_API_KEY_HERE') return;
 
     final inventoryString = InventoryFormatter.formatInventory(items);
-    final systemPrompt = AppPrompts.stylistSystemPrompt.replaceAll('{{INVENTORY_LIST}}', inventoryString);
+    String systemPrompt = AppPrompts.stylistSystemPrompt
+        .replaceAll('{{INVENTORY_LIST}}', inventoryString)
+        .replaceAll('{{USER_PROFILE}}', userProfile.toAIContextString());
     
     _model = GenerativeModel(
         model: AppConstants.geminiModel,

@@ -258,7 +258,7 @@ class _AIChatPageState extends State<AIChatPage> {
       _aiService = context.read<AIService>();
       if (_aiService.messages.isEmpty) {
         final dataService = context.read<DataService>();
-        _aiService.updateContext(dataService.clothingItems);
+        _aiService.updateContext(dataService.clothingItems, dataService.userProfile);
         _aiService.startChat();
       }
       // Listen for changes in messages and scroll to bottom

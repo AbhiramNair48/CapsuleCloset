@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import '../models/clothing_item.dart';
 import '../models/outfit.dart';
 import '../models/friend.dart';
+import '../models/user_profile.dart';
 import '../data/mock_clothing_data.dart';
 import '../data/mock_outfit_data.dart';
 import '../data/mock_friends_data.dart';
@@ -12,11 +13,13 @@ class DataService extends ChangeNotifier {
   List<Outfit> _outfits = [];
   List<Friend> _friends = [];
   List<ClothingItem> _filteredClothingItems = [];
+  UserProfile _userProfile = const UserProfile();
 
   List<ClothingItem> get clothingItems => _clothingItems;
   List<Outfit> get outfits => _outfits;
   List<Friend> get friends => _friends;
   List<ClothingItem> get filteredClothingItems => _filteredClothingItems;
+  UserProfile get userProfile => _userProfile;
 
   DataService() {
     _initializeData();
@@ -28,6 +31,12 @@ class DataService extends ChangeNotifier {
     _outfits = MockOutfitData.getOutfits();
     _friends = List.from(mockFriends);
     _filteredClothingItems = List.from(_clothingItems);
+    notifyListeners();
+  }
+
+  /// Update user profile
+  void updateUserProfile(UserProfile profile) {
+    _userProfile = profile;
     notifyListeners();
   }
 
