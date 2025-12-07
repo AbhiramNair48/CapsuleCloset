@@ -43,6 +43,19 @@ class ClothingItem {
     );
   }
 
+  /// Converts this clothing item to a JSON-compatible map
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'imagePath': imagePath,
+      'type': type,
+      'material': material,
+      'color': color,
+      'style': style,
+      'description': description,
+    };
+  }
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
