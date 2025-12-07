@@ -7,6 +7,7 @@ class ClothingItem {
   final String color;
   final String style;
   final String description;
+  final bool isEditable;
 
   const ClothingItem({
     required this.id,
@@ -16,6 +17,7 @@ class ClothingItem {
     required this.color,
     required this.style,
     required this.description,
+    this.isEditable = true,
   });
 
   /// Creates a copy of this clothing item with updated fields
@@ -27,6 +29,7 @@ class ClothingItem {
     String? color,
     String? style,
     String? description,
+    bool? isEditable,
   }) {
     return ClothingItem(
       id: id ?? this.id,
@@ -36,6 +39,7 @@ class ClothingItem {
       color: color ?? this.color,
       style: style ?? this.style,
       description: description ?? this.description,
+      isEditable: isEditable ?? this.isEditable,
     );
   }
 
@@ -49,7 +53,8 @@ class ClothingItem {
         material == other.material &&
         color == other.color &&
         style == other.style &&
-        description == other.description;
+        description == other.description &&
+        isEditable == other.isEditable;
   }
 
   @override
@@ -62,6 +67,7 @@ class ClothingItem {
       color,
       style,
       description,
+      isEditable,
     );
   }
 }

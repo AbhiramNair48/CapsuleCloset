@@ -43,19 +43,41 @@ class ChatBubble extends StatelessWidget {
                 bottomRight: isUserMessage ? const Radius.circular(4.0) : const Radius.circular(18.0),
               ),
             ),
-            child: Text(
-              message,
-              style: TextStyle(
-                color: isUserMessage
-                    ? colorScheme.onPrimaryContainer
-                    : colorScheme.onSurfaceVariant,
-              ),
-              softWrap: true,
-              overflow: TextOverflow.visible,
-            ),
+            child: _buildFormattedText(message, context, isUserMessage),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildFormattedText(String text, BuildContext context, bool isUserMessage) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final baseStyle = TextStyle(
+      color: isUserMessage
+          ? colorScheme.onPrimaryContainer
+          : colorScheme.onSurfaceVariant,
+    );
+    final boldStyle = baseStyle.copyWith(fontWeight: FontWeight.bold);
+
+    List<InlineSpan> spans = [];
+    final splitText = text.split('**');
+
+    for (int i = 0; i < splitText.length; i++) {
+      if (i % 2 == 1) {
+        // Bold text
+        spans.add(TextSpan(text: splitText[i], style: boldStyle));
+      } else {
+        // Normal text
+        if (splitText[i].isNotEmpty) {
+          spans.add(TextSpan(text: splitText[i], style: baseStyle));
+        }
+      }
+    }
+
+    return RichText(
+      text: TextSpan(children: spans),
+      softWrap: true,
+      overflow: TextOverflow.visible,
     );
   }
 }
@@ -188,38 +210,47 @@ class _AIChatPageState extends State<AIChatPage> {
   // Controller for the text input field
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController(); // Add ScrollController
+  late AIService _aiService;
 
   @override
   void initState() {
     super.initState();
     // Initialize chat with closet context if it's the first load
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final aiService = context.read<AIService>();
-      if (aiService.messages.isEmpty) {
+      _aiService = context.read<AIService>();
+      if (_aiService.messages.isEmpty) {
         final dataService = context.read<DataService>();
-        aiService.updateContext(dataService.clothingItems);
-        aiService.startChat();
+        _aiService.updateContext(dataService.clothingItems);
+        _aiService.startChat();
       }
       // Listen for changes in messages and scroll to bottom
-      aiService.addListener(_scrollDown);
+      _aiService.addListener(_scrollDown);
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _aiService = context.read<AIService>();
   }
 
   @override
   void dispose() {
     _scrollController.dispose(); // Dispose controller to avoid memory leaks
-    context.read<AIService>().removeListener(_scrollDown); // Remove listener
+    _aiService.removeListener(_scrollDown); // Remove listener
     super.dispose();
   }
 
   void _scrollDown() {
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
   }
 
   @override

@@ -41,13 +41,12 @@ class _LoginScreenState extends State<LoginScreen> {
         Navigator.pushReplacementNamed(context, '/closet');
       } else {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Invalid email or password'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Invalid email or password'),
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                ),
+              );      }
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -56,7 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Login failed: ${e.toString()}'),
-          backgroundColor: Colors.red,
+          backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
     }
@@ -66,9 +65,9 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_emailController.text.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Text('Please enter your email address first'),
-          backgroundColor: Colors.orange,
+          backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
       return;
@@ -95,7 +94,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ? 'Password reset link sent to ${_emailController.text}'
                 : 'No account found with this email',
           ),
-          backgroundColor: success ? Colors.green : Colors.red,
+          backgroundColor: success ? Colors.green : Theme.of(context).colorScheme.error,
         ),
       );
     } catch (e) {
@@ -107,7 +106,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Password reset failed: ${e.toString()}'),
-          backgroundColor: Colors.red,
+          backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
     }
@@ -164,22 +163,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             TextFormField(
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
-                              decoration: InputDecoration(
+                              decoration: const InputDecoration(
                                 labelText: 'Email',
                                 hintText: 'Enter your email',
-                                prefixIcon: const Icon(Icons.email_outlined),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Colors.pink),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Colors.pink, width: 2),
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Colors.pink),
-                                ),
+                                prefixIcon: Icon(Icons.email_outlined),
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
@@ -197,22 +184,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             TextFormField(
                               controller: _passwordController,
                               obscureText: true,
-                              decoration: InputDecoration(
+                              decoration: const InputDecoration(
                                 labelText: 'Password',
                                 hintText: 'Enter your password',
-                                prefixIcon: const Icon(Icons.lock_outline),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Colors.pink),
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Colors.pink, width: 2),
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  borderSide: const BorderSide(color: Colors.pink),
-                                ),
+                                prefixIcon: Icon(Icons.lock_outline),
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
@@ -240,12 +215,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             ElevatedButton(
                               onPressed: _isLoading ? null : _handleLogin,
                               child: _isLoading
-                                  ? const SizedBox(
+                                  ? SizedBox(
                                       width: 20,
                                       height: 20,
                                       child: CircularProgressIndicator(
                                         strokeWidth: 2,
-                                        color: Colors.white,
+                                        color: Theme.of(context).colorScheme.onPrimary,
                                       ),
                                     )
                                   : const Text('Sign In'),

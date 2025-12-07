@@ -78,3 +78,18 @@ The application follows a layered architecture:
     *   Added widget tests for `LoginScreen` (`test/screens/login_screen_test.dart`).
     *   Added unit tests for `DataService` (`test/services/data_service_test.dart`).
     *   Verified 12 passing tests in total.
+
+## Refactor Log (December 5, 2025)
+*   **Build & Test Fixes:**
+    *   Fixed `MockAIService` in `test/screens/ai_chat_page_test.dart` to implement missing `processResponse` method.
+    *   Resolved compilation errors preventing test execution.
+    *   Verified **17 passing tests** (up from failing state).
+*   **Architecture & Theme:**
+    *   Updated `AppTheme` (`lib/theme/app_theme.dart`) to include `DialogThemeData` and a robust `InputDecorationTheme`.
+    *   Enforced theme usage in `LoginScreen`, removing hardcoded `Colors.pink` borders and `Colors.red`/`Colors.orange` hardcodes in favor of `Theme.of(context).colorScheme`.
+*   **Refactoring & Deduplication:**
+    *   Created `DeleteIconButton` (`lib/widgets/delete_icon_button.dart`) to deduplicate delete button logic in `UploadToClosetPage`.
+    *   Updated `UploadToClosetPage`, `MainNavigationScreen`, and `OutfitDetailDrawer` to replace hardcoded colors with semantic theme colors (`error`, `primary`, `onSurfaceVariant`).
+*   **Code Quality:**
+    *   Addressed linter warnings (unused variables/fields).
+    *   Achieved 0 issues in `flutter analyze`.

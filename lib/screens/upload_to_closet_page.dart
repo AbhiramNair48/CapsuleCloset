@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import '../widgets/delete_icon_button.dart';
 
 class UploadToClosetPage extends StatefulWidget {
   const UploadToClosetPage({super.key});
@@ -129,42 +130,24 @@ class _UploadToClosetPageState extends State<UploadToClosetPage> {
                                                                 );
                                                               },
                                                             ),
-                                                            // Top-right positioned delete button - sits directly on the image
-                                                            Positioned(
-                                                              top: 6,
-                                                              right: 6,
-                                                              child: GestureDetector(
-                                                                onTap: () {
-                                                                  // Remove from both the local list and the main list
-                                                                  setDrawerState(() {
-                                                                    drawerImages.removeAt(index);
-                                                                  });
-                                                                  
-                                                                  setState(() {
-                                                                    _selectedImages.removeAt(index);
-                                                                  });
-                                                                },
-                                                                child: Container(
-                                                                  padding: const EdgeInsets.all(6),
-                                                                  decoration: BoxDecoration(
-                                                                    color: Colors.white.withValues(alpha: 0.9),
-                                                                    shape: BoxShape.circle,
-                                                                    boxShadow: [
-                                                                      BoxShadow(
-                                                                        color: Colors.black.withValues(alpha: 0.1),
-                                                                        blurRadius: 2,
-                                                                      )
-                                                                    ]
-                                                                  ),
-                                                                  child: const Icon(
-                                                                    Icons.close,
-                                                                    size: 16,
-                                                                    color: Colors.redAccent,
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          ],
+                                                                                        // Top-right positioned delete button - sits directly on the image
+                                                                                        Positioned(
+                                                                                          top: 6,
+                                                                                          right: 6,
+                                                                                          child: DeleteIconButton(
+                                                                                            onTap: () {
+                                                                                              // Remove from both the local list and the main list
+                                                                                              setDrawerState(() {
+                                                                                                drawerImages.removeAt(index);
+                                                                                              });
+                                                                                              
+                                                                                              setState(() {
+                                                                                                _selectedImages.removeAt(index);
+                                                                                              });
+                                                                                            },
+                                                                                            iconSize: 16,
+                                                                                          ),
+                                                                                        ),                                                          ],
                                                         ),
                                                       );
                                                     },
@@ -465,34 +448,15 @@ class _UploadToClosetPageState extends State<UploadToClosetPage> {
                             );
                           }
                         
-                          Widget _buildDeleteButton(int index) {
-                            return GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _selectedImages.removeAt(index);
-                                });
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.all(6),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.9),
-                                  shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withValues(alpha: 0.1),
-                                      blurRadius: 4,
-                                    )
-                                  ],
-                                ),
-                                child: const Icon(
-                                  Icons.close,
-                                  size: 18,
-                                  color: Colors.redAccent,
-                                ),
-                              ),
-                            );
-                          }
-                        
+                            Widget _buildDeleteButton(int index) {
+                              return DeleteIconButton(
+                                onTap: () {
+                                  setState(() {
+                                    _selectedImages.removeAt(index);
+                                  });
+                                },
+                              );
+                            }                        
                           Widget _buildActionButton({
                             required IconData icon,
                             required String label,

@@ -118,13 +118,13 @@ class OutfitDetailDrawerState extends State<OutfitDetailDrawer> {
                                     ),
                                     const SizedBox(width: 8),
                                     IconButton(
-                                      icon: const Icon(Icons.check, color: Colors.green),
+                                      icon: Icon(Icons.check, color: Theme.of(context).colorScheme.tertiary),
                                       onPressed: _saveName,
                                       padding: EdgeInsets.zero,
                                       constraints: const BoxConstraints(),
                                     ),
                                     IconButton(
-                                      icon: const Icon(Icons.close, color: Colors.red),
+                                      icon: Icon(Icons.close, color: Theme.of(context).colorScheme.error),
                                       onPressed: _cancelEdit,
                                       padding: EdgeInsets.zero,
                                       constraints: const BoxConstraints(),
@@ -141,7 +141,7 @@ class OutfitDetailDrawerState extends State<OutfitDetailDrawer> {
                           Text(
                             'Saved ${_formatDate(_currentOutfit.savedDate)}',
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                  color: Colors.grey[600],
+                                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                                 ),
                           ),
                         ],
