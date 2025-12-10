@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'dart:io';
 
-// TODO: change db password to .env variable
+// TODO: change db password to .env variable, hashing password for user signup
 Future<void> main() async {
 
   // final response = await http.get(Uri.parse('https://api.ipify.org?format=json'));
@@ -37,7 +37,9 @@ Future<void> main() async {
       var username = request.uri.queryParameters['username'];
       var password = request.uri.queryParameters['password'];
 
-      var signupStatement = await pool.prepare('INSERT INTO users (username, password_hash, )')
+      // Signup User
+      await pool.execute('INSERT INTO users (username, password_hash) VALUES(:username, :password_hash)',
+      {"username": username, "password": password});
         
      
      }
