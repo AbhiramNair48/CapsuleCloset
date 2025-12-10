@@ -326,7 +326,7 @@ class _AIChatPageState extends State<AIChatPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.pink.shade50,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Consumer<AIService>(
         builder: (context, aiService, child) {
           return Column(
