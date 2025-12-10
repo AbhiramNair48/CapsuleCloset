@@ -1,29 +1,29 @@
-import 'package:mysql1/mysql1.dart';
+import 'package:mysql_client/mysql_client.dart';
 
 
 // TODO: change db password to .env variable
 
 Future<void> main() async {
   // Create a connection settings object
-  final settings = ConnectionSettings(
-    host: 'localhost',
+  final conn = await MySQLConnection.createConnection(
+    host: "127.0.0.1",
     port: 3306,
-    user: 'root',
-    password: 'root',
-    db: 'capsule_closet',
+    userName: "root",
+    password: "root",
+    databaseName: "capsule_closet", 
   );
 
-  // Connect to the database
-  final conn = await MySqlConnection.connect(settings);
 
-  // Run a query
-  // var results = await conn.query('SELECT * FROM users');
+  await conn.connect();
 
-  // // Iterate results
-  // for (var row in results) {
-  //   print('User: ${row[0]}, Email: ${row[1]}');
-  // }
+  var tables = await conn.execute('SHOW TABLES;');
+    // Print the database name
 
+    for (var row in tables.rows) {
+      // The table name will be in the first column of each row
+      print(row.assoc());
+    }
+  
   // Close connection
   await conn.close();
 }
