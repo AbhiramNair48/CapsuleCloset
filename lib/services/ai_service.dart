@@ -39,7 +39,7 @@ class AIService extends ChangeNotifier {
   }
 
   void _initModel() {
-    final apiKey = _explicitApiKey ?? AppConstants.geminiApiKey;
+    final apiKey = _explicitApiKey ?? AppConstants.geminiLLMApiKey;
     
     if (apiKey.isNotEmpty && apiKey != 'YOUR_API_KEY_HERE') {
       _model = GenerativeModel(
@@ -111,7 +111,7 @@ class AIService extends ChangeNotifier {
   void updateContext(List<ClothingItem> items, UserProfile userProfile, {String? weatherInfo}) {
     _closetItems = items; // Store items for image lookup
     
-    final apiKey = _explicitApiKey ?? AppConstants.geminiApiKey;
+    final apiKey = _explicitApiKey ?? AppConstants.geminiLLMApiKey;
     if (apiKey.isEmpty || apiKey == 'YOUR_API_KEY_HERE') return;
 
     final inventoryString = InventoryFormatter.formatInventory(items);

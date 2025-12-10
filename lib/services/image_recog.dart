@@ -20,7 +20,7 @@ class ImageRecognitionService {
   ImageRecognitionService({String? apiKey})
       : _model = GenerativeModel(
           model: AppConstants.geminiModel,
-          apiKey: apiKey ?? AppConstants.geminiApiKey,
+          apiKey: apiKey ?? AppConstants.geminiVisionApiKey,
           generationConfig: GenerationConfig(
             responseMimeType: 'application/json',
           ),

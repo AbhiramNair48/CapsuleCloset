@@ -60,7 +60,7 @@ class _UploadToClosetPageState extends State<UploadToClosetPage> {
               builder: (BuildContext context, StateSetter setDrawerState) {
                 return Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).cardColor,
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(24),
                       topRight: Radius.circular(24),
@@ -266,11 +266,11 @@ class _UploadToClosetPageState extends State<UploadToClosetPage> {
                                         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                                         decoration: _selectedImages.isEmpty
                                             ? BoxDecoration(
-                                                color: Colors.white,
+                                                color: theme.cardColor,
                                                 borderRadius: BorderRadius.circular(32.0),
                                                 boxShadow: [
                                                   BoxShadow(
-                                                    color: Colors.pink.withValues(alpha: 0.1),
+                                                    color: theme.colorScheme.primary.withAlpha((255 * 0.1).round()),
                                                     spreadRadius: 2,
                                                     blurRadius: 15,
                                                     offset: const Offset(0, 5),
@@ -297,7 +297,7 @@ class _UploadToClosetPageState extends State<UploadToClosetPage> {
                                                   icon: Icons.photo_library_rounded,
                                                   label: 'Gallery',
                                                   onTap: _pickImageFromGallery,
-                                                  color: Colors.white,
+                                                  color: theme.cardColor,
                                                   textColor: theme.colorScheme.primary,
                                                 ),
                                               ),
@@ -307,7 +307,7 @@ class _UploadToClosetPageState extends State<UploadToClosetPage> {
                                                   icon: Icons.camera_alt_rounded,
                                                   label: 'Camera',
                                                   onTap: _takePhoto,
-                                                  color: Colors.white,
+                                                  color: theme.cardColor,
                                                   textColor: theme.colorScheme.primary,
                                                 ),
                                               ),
