@@ -49,6 +49,8 @@ class FriendClosetPage extends StatelessWidget {
 
                 onClose: () => Navigator.of(context).pop(),
 
+                isReadOnly: true,
+
               ),
 
             );

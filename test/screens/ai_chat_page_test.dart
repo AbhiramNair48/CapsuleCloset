@@ -4,6 +4,7 @@ import 'package:capsule_closet_app/services/data_service.dart';
 import 'package:capsule_closet_app/models/clothing_item.dart';
 import 'package:capsule_closet_app/models/friend.dart';
 import 'package:capsule_closet_app/models/outfit.dart';
+import 'package:capsule_closet_app/models/user_profile.dart'; // Import UserProfile
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -19,7 +20,7 @@ class MockAIService extends ChangeNotifier implements AIService {
   bool get isLoading => false;
 
   @override
-  void updateContext(List<ClothingItem> items) {}
+  void updateContext(List<ClothingItem> items, UserProfile userProfile, {String? weatherInfo}) {} // Updated signature
 
   @override
   void startChat() {}
@@ -31,18 +32,17 @@ class MockAIService extends ChangeNotifier implements AIService {
   }
 
   @override
-  ({String cleanText, List<String> imagePaths}) processResponse(String text) {
-    return (cleanText: text, imagePaths: <String>[]);
+  ({String cleanText, List<String> imagePaths, List<String> itemIds}) processResponse(String text) {
+    return (cleanText: text, imagePaths: <String>[], itemIds: <String>[]);
   }
 
-  void addBotMessage(String text, {List<String>? imagePaths}) {
-    _messages.add(Message(text: text, isUser: false, imagePaths: imagePaths));
+  void addBotMessage(String text, {List<String>? imagePaths, List<String>? itemIds}) {
+    _messages.add(Message(text: text, isUser: false, imagePaths: imagePaths, itemIds: itemIds));
     notifyListeners();
   }
 
   // Expose the extraction logic via a public method or test it via side effects
   // Since we are mocking AIService, we can't test the real logic here easily.
-  // But the original request was to fix the "feature", which implies the integration.
   // We will create a separate unit test for AIService logic if needed.
 }
 
@@ -70,6 +70,8 @@ class MockDataService extends ChangeNotifier implements DataService {
   @override
   List<ClothingItem> get filteredClothingItems => [];
   @override
+  UserProfile get userProfile => const UserProfile(); // Added userProfile getter
+  @override
   void addClothingItem(ClothingItem item) {}
   @override
   void removeClothingItem(String id) {}
@@ -83,6 +85,10 @@ class MockDataService extends ChangeNotifier implements DataService {
   void updateOutfit(Outfit updatedOutfit) {}
   @override
   void removeOutfit(String id) {}
+  @override
+  void removeFriend(String id) {}
+  @override
+  void updateUserProfile(UserProfile profile) {} // Added updateUserProfile
   @override
   List<ClothingItem> getClothingItemsByType(String type) => [];
   @override

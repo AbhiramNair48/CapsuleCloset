@@ -1,5 +1,6 @@
 import 'package:capsule_closet_app/services/ai_service.dart';
 import 'package:capsule_closet_app/models/clothing_item.dart';
+import 'package:capsule_closet_app/models/user_profile.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -33,7 +34,7 @@ void main() {
         ),
       ];
 
-      aiService.updateContext(items);
+      aiService.updateContext(items, const UserProfile());
 
       const rawResponse = 'You should wear the White shirt <<ID:123>> and Blue jeans <<ID:456>>.';
       final result = aiService.processResponse(rawResponse);
@@ -43,7 +44,7 @@ void main() {
     });
 
     test('handles unknown IDs gracefully', () {
-       aiService.updateContext([]);
+       aiService.updateContext([], const UserProfile());
        const rawResponse = 'Wear this <<ID:unknown>>.';
        final result = aiService.processResponse(rawResponse);
        
@@ -63,7 +64,7 @@ void main() {
           description: 'White shirt',
         ),
       ];
-      aiService.updateContext(items);
+      aiService.updateContext(items, const UserProfile());
       
       const rawResponse = 'Wear shirt <<ID:123>>. Really, wear the shirt <<ID:123>>.';
       final result = aiService.processResponse(rawResponse);
@@ -92,7 +93,7 @@ void main() {
           description: 'Brown shoes',
         ),
       ];
-      aiService.updateContext(items);
+      aiService.updateContext(items, const UserProfile());
       
       const rawResponse = '''
 **What to wear:** White shirt <<ID:123>>.

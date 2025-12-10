@@ -5,6 +5,7 @@ import 'closet_screen.dart'; // Closet tab
 import 'friends_page.dart'; // Friends tab
 import 'upload_to_closet_page.dart'; // Add tab
 import '../services/auth_service.dart';
+import 'profile_screen.dart';
 
 /// Main navigation screen that handles bottom navigation
 /// This separates navigation logic from content screens
@@ -49,7 +50,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                 title: const Text('Profile'),
                 onTap: () {
                   Navigator.pop(context);
-                  // TODO: Navigate to profile screen
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ProfileScreen()),
+                  );
                 },
               ),
               ListTile(

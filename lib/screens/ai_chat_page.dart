@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/ai_service.dart';
 import '../services/data_service.dart';
+import '../models/outfit.dart';
+import '../services/weather_service.dart';
 
 /// ChatBubble widget for displaying messages in the chat interface
 /// Supports both user and bot messages with different styling
@@ -86,10 +88,12 @@ class ChatBubble extends StatelessWidget {
 /// Shows a list of outfit images in a vertical layout
 class OutfitPreview extends StatelessWidget {
   final List<String> imagePaths;
+  final List<String> itemIds;
 
   const OutfitPreview({
     super.key,
     required this.imagePaths,
+    this.itemIds = const [],
   });
 
   @override
@@ -137,6 +141,41 @@ class OutfitPreview extends StatelessWidget {
               );
             },
           ),
+          if (itemIds.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    final dataService = context.read<DataService>();
+                    final items = dataService.clothingItems
+                        .where((item) => itemIds.contains(item.id))
+                        .toList();
+
+                    if (items.isNotEmpty) {
+                      final now = DateTime.now();
+                      final newOutfit = Outfit(
+                        id: now.millisecondsSinceEpoch.toString(),
+                        name: "${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}-${now.year}",
+                        items: items,
+                        savedDate: now,
+                      );
+                      dataService.addOutfit(newOutfit);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Outfit saved to closet!')),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Could not find these items in your closet.')),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.checkroom),
+                  label: const Text('Save Outfit'),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -218,32 +257,63 @@ class _AIChatPageState extends State<AIChatPage> {
     // Initialize chat with closet context if it's the first load
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _aiService = context.read<AIService>();
-      if (_aiService.messages.isEmpty) {
-        final dataService = context.read<DataService>();
-        _aiService.updateContext(dataService.clothingItems);
-        _aiService.startChat();
-      }
       // Listen for changes in messages and scroll to bottom
       _aiService.addListener(_scrollDown);
+      _initializeChatWithWeather();
     });
+  }
+
+  Future<void> _initializeChatWithWeather() async {
+    if (_aiService.messages.isEmpty) {
+      final dataService = context.read<DataService>();
+      String? weatherString;
+
+      try {
+        final weatherService = WeatherService();
+        final weatherData = await weatherService.getCurrentWeather();
+        if (weatherData.isNotEmpty) {
+           weatherString = 
+            "Temp: ${weatherData['current_temp']}${weatherData['unit']}, "
+            "Max: ${weatherData['max_temp']}${weatherData['unit']}, "
+            "Precip: ${weatherData['precip_chance']}%";
+        }
+      } catch (e) {
+        debugPrint("Weather fetch failed: $e");
+      }
+
+      if (!mounted) return;
+
+      _aiService.updateContext(
+        dataService.clothingItems, 
+        dataService.userProfile,
+        weatherInfo: weatherString
+      );
+      _aiService.startChat();
+    }
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _aiService = context.read<AIService>();
+    // Re-acquire reference if dependencies change, though usually handled in initState/build
+    // _aiService = context.read<AIService>(); // Removed to avoid overwriting and potentially losing the listener reference logic
   }
 
   @override
   void dispose() {
     _scrollController.dispose(); // Dispose controller to avoid memory leaks
-    _aiService.removeListener(_scrollDown); // Remove listener
+    try {
+      _aiService.removeListener(_scrollDown); // Remove listener
+    } catch (e) {
+      // Ignore if aiService was not initialized
+    }
     super.dispose();
   }
 
   void _scrollDown() {
+    if (!mounted) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
+      if (mounted && _scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
           duration: const Duration(milliseconds: 300),
@@ -290,6 +360,7 @@ class _AIChatPageState extends State<AIChatPage> {
                               padding: const EdgeInsets.only(top: 8.0),
                               child: OutfitPreview(
                                 imagePaths: message.imagePaths!,
+                                itemIds: message.itemIds ?? [],
                               ),
                             ),
                         ],

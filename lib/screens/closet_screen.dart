@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../models/clothing_item.dart';
-import '../services/data_service.dart';
-import '../widgets/apparel_info_overlay.dart';
-import '../widgets/closet_content.dart';
 import 'saved_outfits_screen.dart';
+import 'clothes_tab_screen.dart';
 
 /// Main screen widget for displaying the user's digital closet
 class ClosetScreen extends StatefulWidget {
@@ -29,22 +25,6 @@ class _ClosetScreenState extends State<ClosetScreen> with SingleTickerProviderSt
     super.dispose();
   }
 
-
-
-  void _showApparelInfo(ClothingItem item) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (BuildContext context) {
-        return ApparelInfoOverlay(
-          item: item,
-          onClose: () => Navigator.of(context).pop(),
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -63,14 +43,7 @@ class _ClosetScreenState extends State<ClosetScreen> with SingleTickerProviderSt
           child: TabBarView(
             controller: _tabController,
             children: [
-              Consumer<DataService>(
-                builder: (context, dataService, child) {
-                  return ClosetContent(
-                    items: dataService.clothingItems,
-                    onItemTap: _showApparelInfo,
-                  );
-                },
-              ),
+              const ClothesTabScreen(),
               const SavedOutfitsScreen(),
             ],
           ),

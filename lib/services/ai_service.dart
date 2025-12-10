@@ -4,16 +4,19 @@ import '../models/clothing_item.dart';
 import '../config/app_constants.dart';
 import 'prompts.dart';
 import 'inventory_formatter.dart';
+import '../models/user_profile.dart';
 
 class Message {
   final String text;
   final bool isUser;
   final List<String>? imagePaths;
+  final List<String>? itemIds;
 
   Message({
     required this.text,
     required this.isUser,
     this.imagePaths,
+    this.itemIds,
   });
 }
 
@@ -89,7 +92,8 @@ class AIService extends ChangeNotifier {
         _messages.add(Message(
           text: extractionResult.cleanText, 
           isUser: false, 
-          imagePaths: extractionResult.imagePaths
+          imagePaths: extractionResult.imagePaths,
+          itemIds: extractionResult.itemIds,
         ));
       } else {
         _messages.add(Message(text: "I'm sorry, I didn't understand that.", isUser: false));
@@ -103,14 +107,19 @@ class AIService extends ChangeNotifier {
   }
   
   // A method to explicitly feed context if we want to restart the chat with context
-  void updateContext(List<ClothingItem> items) {
+  void updateContext(List<ClothingItem> items, UserProfile userProfile, {String? weatherInfo}) {
     _closetItems = items; // Store items for image lookup
     
     final apiKey = _explicitApiKey ?? AppConstants.geminiApiKey;
     if (apiKey.isEmpty || apiKey == 'YOUR_API_KEY_HERE') return;
 
     final inventoryString = InventoryFormatter.formatInventory(items);
-    final systemPrompt = AppPrompts.stylistSystemPrompt.replaceAll('{{INVENTORY_LIST}}', inventoryString);
+    final weatherString = weatherInfo ?? "Weather data unavailable.";
+
+    String systemPrompt = AppPrompts.stylistSystemPrompt
+        .replaceAll('{{INVENTORY_LIST}}', inventoryString)
+        .replaceAll('{{USER_PROFILE}}', userProfile.toAIContextString())
+        .replaceAll('{{WEATHER_INFO}}', weatherString);
     
     _model = GenerativeModel(
         model: AppConstants.geminiModel,
@@ -124,8 +133,9 @@ class AIService extends ChangeNotifier {
 
   /// Processes the response to extract IDs and clean the text.
   @visibleForTesting
-  ({String cleanText, List<String> imagePaths}) processResponse(String text) {
+  ({String cleanText, List<String> imagePaths, List<String> itemIds}) processResponse(String text) {
     final List<String> paths = [];
+    final List<String> ids = [];
     
     // Regex to find <<ID:some_id>>
     final RegExp idRegex = RegExp(r'<<ID:([^>]+)>>');
@@ -163,6 +173,7 @@ class AIService extends ChangeNotifier {
           // Avoid duplicates
           if (!paths.contains(item.imagePath)) {
             paths.add(item.imagePath);
+            ids.add(item.id);
           }
         } catch (e) {
           // Item not found, ignore
@@ -174,6 +185,6 @@ class AIService extends ChangeNotifier {
     // 3. Clean tags from the ENTIRE text
     String cleanText = text.replaceAll(idRegex, '');
     
-    return (cleanText: cleanText, imagePaths: paths);
+    return (cleanText: cleanText, imagePaths: paths, itemIds: ids);
   }
 }
