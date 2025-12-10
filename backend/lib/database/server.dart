@@ -29,15 +29,18 @@ Future<void> main() async {
     8080,
   );
 
-  print('Server running on http://${server.address.address}:${server.port}/');
+
   await for (HttpRequest request in server) {
     if (request.method == 'POST' && request.uri.path == '/signup') {
       var username = request.uri.queryParameters['username'];
       var password = request.uri.queryParameters['password'];
+      var email = request.uri.queryParameters['email'];
+      var gender = request.uri.queryParameters['gender'];
+      var favoriteStyle = request.uri.queryParameters['favorite_style'];
 
       // Signup User
-      await pool.execute('INSERT INTO users (username, password_hash) VALUES(:username, :password_hash)',
-      {"username": username, "password": password});
+      await pool.execute('INSERT INTO users (username, password_hash, email, gender, favorite_style) VALUES(:username, :password_hash, :email, :gender, :favorite_style)',
+      {"username": username, "password": password, "email": email, "gender": gender, "favorite_style": favoriteStyle});
         
      
      }
