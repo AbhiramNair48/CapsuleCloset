@@ -16,9 +16,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late TextEditingController _nameController;
   late TextEditingController _genderController;
   late TextEditingController _styleController;
-  late TextEditingController _bodyTypeController;
-  late TextEditingController _occasionsController;
-  late TextEditingController _goalsController;
 
   @override
   void initState() {
@@ -27,10 +24,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _nameController = TextEditingController(text: userProfile.name);
     _genderController = TextEditingController(text: userProfile.gender);
     _styleController = TextEditingController(text: userProfile.favoriteStyle);
-    _bodyTypeController = TextEditingController(text: userProfile.bodyType);
-    _occasionsController =
-        TextEditingController(text: userProfile.typicalOccasions);
-    _goalsController = TextEditingController(text: userProfile.fashionGoals);
   }
 
   @override
@@ -38,9 +31,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _nameController.dispose();
     _genderController.dispose();
     _styleController.dispose();
-    _bodyTypeController.dispose();
-    _occasionsController.dispose();
-    _goalsController.dispose();
     super.dispose();
   }
 
@@ -50,9 +40,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         name: _nameController.text,
         gender: _genderController.text,
         favoriteStyle: _styleController.text,
-        bodyType: _bodyTypeController.text,
-        typicalOccasions: _occasionsController.text,
-        fashionGoals: _goalsController.text,
       );
 
       context.read<DataService>().updateUserProfile(newProfile);
@@ -90,16 +77,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   'Favorite Style (e.g., Casual, Chic, Streetwear)',
                   _styleController,
                   Icons.style),
-              const SizedBox(height: 16),
-              _buildTextField(
-                  'Body Type', _bodyTypeController, Icons.accessibility_new),
-              const SizedBox(height: 16),
-              _buildTextField('Typical Occasions (e.g., Office, Parties, Gym)',
-                  _occasionsController, Icons.event),
-              const SizedBox(height: 16),
-              _buildTextField('Fashion Goals', _goalsController,
-                  Icons.flag_outlined,
-                  maxLines: 3),
               const SizedBox(height: 24),
               Consumer<ThemeService>(
                 builder: (context, themeService, child) {
