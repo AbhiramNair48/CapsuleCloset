@@ -1,3 +1,4 @@
+import 'package:capsule_closet_app/services/theme_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -23,14 +24,22 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => DataService()),
         ChangeNotifierProvider(create: (_) => AIService()),
+        ChangeNotifierProvider(create: (_) => ThemeService()),
       ],
-      child: MaterialApp(
-        title: 'Capsule Closet',
-        theme: AppTheme.lightTheme,
-        initialRoute: '/',
-        routes: {
-          '/': (context) => const LoginScreen(),
-          '/closet': (context) => const MainNavigationScreen(), // Now goes to the main navigation screen
+      child: Consumer<ThemeService>(
+        builder: (context, themeService, child) {
+          return MaterialApp(
+            title: 'Capsule Closet',
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: themeService.themeMode,
+            initialRoute: '/',
+            routes: {
+              '/': (context) => const LoginScreen(),
+              '/closet': (context) =>
+                  const MainNavigationScreen(), // Now goes to the main navigation screen
+            },
+          );
         },
       ),
     );
