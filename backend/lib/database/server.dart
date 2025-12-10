@@ -1,6 +1,4 @@
 import 'package:mysql_client/mysql_client.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'dart:io';
 
 // TODO: change db password to .env variable, hashing password for user signup
@@ -14,12 +12,12 @@ Future<void> main() async {
   //   print('Failed to get public IP');
   // }
 
-  final db_ip = "127.0.0.1"; 
-  final db_port = 3306;
+  final dbIp = "127.0.0.1"; 
+  final dbPort = 3306;
   // Create a connection settings object
   final pool = MySQLConnectionPool(
-    host: db_ip,
-    port: db_port,
+    host: dbIp,
+    port: dbPort,
     userName: "root",
     password: "root",
     databaseName: "capsule_closet", 
