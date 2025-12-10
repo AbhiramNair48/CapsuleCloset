@@ -20,6 +20,11 @@ class MockAuthService extends ChangeNotifier implements AuthService {
   }
 
   @override
+  Future<bool> signUp(String username, String email, String password) async {
+    return true;
+  }
+
+  @override
   Future<bool> resetPassword(String email) async {
     return true;
   }
