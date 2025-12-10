@@ -1,3 +1,4 @@
+import 'package:capsule_closet_app/services/theme_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/user_profile.dart';
@@ -27,7 +28,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _genderController = TextEditingController(text: userProfile.gender);
     _styleController = TextEditingController(text: userProfile.favoriteStyle);
     _bodyTypeController = TextEditingController(text: userProfile.bodyType);
-    _occasionsController = TextEditingController(text: userProfile.typicalOccasions);
+    _occasionsController =
+        TextEditingController(text: userProfile.typicalOccasions);
     _goalsController = TextEditingController(text: userProfile.fashionGoals);
   }
 
@@ -84,14 +86,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 16),
               _buildTextField('Gender', _genderController, Icons.wc),
               const SizedBox(height: 16),
-              _buildTextField('Favorite Style (e.g., Casual, Chic, Streetwear)', _styleController, Icons.style),
+              _buildTextField(
+                  'Favorite Style (e.g., Casual, Chic, Streetwear)',
+                  _styleController,
+                  Icons.style),
               const SizedBox(height: 16),
-              _buildTextField('Body Type', _bodyTypeController, Icons.accessibility_new),
+              _buildTextField(
+                  'Body Type', _bodyTypeController, Icons.accessibility_new),
               const SizedBox(height: 16),
-              _buildTextField('Typical Occasions (e.g., Office, Parties, Gym)', _occasionsController, Icons.event),
+              _buildTextField('Typical Occasions (e.g., Office, Parties, Gym)',
+                  _occasionsController, Icons.event),
               const SizedBox(height: 16),
-              _buildTextField('Fashion Goals', _goalsController, Icons.flag_outlined, maxLines: 3),
-              const SizedBox(height: 32),
+              _buildTextField('Fashion Goals', _goalsController,
+                  Icons.flag_outlined,
+                  maxLines: 3),
+              const SizedBox(height: 24),
+              Consumer<ThemeService>(
+                builder: (context, themeService, child) {
+                  return SwitchListTile(
+                    title: const Text('Dark Mode'),
+                    value: themeService.isDarkMode,
+                    onChanged: (value) {
+                      themeService.toggleTheme();
+                    },
+                    secondary: Icon(themeService.isDarkMode
+                        ? Icons.dark_mode
+                        : Icons.light_mode),
+                  );
+                },
+              ),
+              const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _saveProfile,
                 child: const Text('Save Profile'),
@@ -103,7 +127,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller, IconData icon, {int maxLines = 1}) {
+  Widget _buildTextField(String label, TextEditingController controller,
+      IconData icon, {int maxLines = 1}) {
     return TextFormField(
       controller: controller,
       maxLines: maxLines,
