@@ -32,6 +32,7 @@ class AIService extends ChangeNotifier {
   // Store closet items to map AI responses back to images
   List<ClothingItem> _closetItems = [];
   final String? _explicitApiKey;
+  String? _lastSystemPrompt;
 
   AIService({String? apiKey}) : _explicitApiKey = apiKey {
     _initModel();
@@ -121,14 +122,24 @@ class AIService extends ChangeNotifier {
         .replaceAll('{{USER_PROFILE}}', userProfile.toAIContextString())
         .replaceAll('{{WEATHER_INFO}}', weatherString);
     
+    // If the prompt hasn't changed, don't reset the session
+    if (_lastSystemPrompt == systemPrompt) return;
+    _lastSystemPrompt = systemPrompt;
+
+    // Preserve history if session exists
+    List<Content>? history;
+    if (_chatSession != null) {
+      history = _chatSession!.history.toList();
+    }
+
     _model = GenerativeModel(
         model: AppConstants.geminiModel,
         apiKey: apiKey,
         systemInstruction: Content.system(systemPrompt),
     );
     
-    // Reset chat session with new model/instruction
-    _chatSession = _model!.startChat();
+    // Reset chat session with new model/instruction but keep history
+    _chatSession = _model!.startChat(history: history);
   }
 
   /// Processes the response to extract IDs and clean the text.

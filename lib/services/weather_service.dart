@@ -11,7 +11,7 @@ class WeatherService {
 
       // 2. Call Open-Meteo API
       final url = Uri.parse(
-          'https://api.open-meteo.com/v1/forecast?latitude=${position.latitude}&longitude=${position.longitude}&current=temperature_2m&daily=temperature_2m_max,precipitation_probability_max&forecast_days=1');
+          'https://api.open-meteo.com/v1/forecast?latitude=${position.latitude}&longitude=${position.longitude}&current=temperature_2m&daily=temperature_2m_max,precipitation_probability_max&forecast_days=1&temperature_unit=fahrenheit');
       
       final response = await http.get(url);
 

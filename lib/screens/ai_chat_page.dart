@@ -71,7 +71,9 @@ class ChatBubble extends StatelessWidget {
       } else {
         // Normal text
         if (splitText[i].isNotEmpty) {
-          spans.add(TextSpan(text: splitText[i], style: baseStyle));
+          // Replace * with bullet point
+          String formattedText = splitText[i].replaceAll('*', '•');
+          spans.add(TextSpan(text: formattedText, style: baseStyle));
         }
       }
     }
@@ -264,32 +266,30 @@ class _AIChatPageState extends State<AIChatPage> {
   }
 
   Future<void> _initializeChatWithWeather() async {
-    if (_aiService.messages.isEmpty) {
-      final dataService = context.read<DataService>();
-      String? weatherString;
+    final dataService = context.read<DataService>();
+    String? weatherString;
 
-      try {
-        final weatherService = WeatherService();
-        final weatherData = await weatherService.getCurrentWeather();
-        if (weatherData.isNotEmpty) {
-           weatherString = 
-            "Temp: ${weatherData['current_temp']}${weatherData['unit']}, "
-            "Max: ${weatherData['max_temp']}${weatherData['unit']}, "
-            "Precip: ${weatherData['precip_chance']}%";
-        }
-      } catch (e) {
-        debugPrint("Weather fetch failed: $e");
+    try {
+      final weatherService = WeatherService();
+      final weatherData = await weatherService.getCurrentWeather();
+      if (weatherData.isNotEmpty) {
+          weatherString = 
+          "Temp: ${weatherData['current_temp']}${weatherData['unit']}, "
+          "Max: ${weatherData['max_temp']}${weatherData['unit']}, "
+          "Precip: ${weatherData['precip_chance']}%";
       }
-
-      if (!mounted) return;
-
-      _aiService.updateContext(
-        dataService.clothingItems, 
-        dataService.userProfile,
-        weatherInfo: weatherString
-      );
-      _aiService.startChat();
+    } catch (e) {
+      debugPrint("Weather fetch failed: $e");
     }
+
+    if (!mounted) return;
+
+    _aiService.updateContext(
+      dataService.clothingItems, 
+      dataService.userProfile,
+      weatherInfo: weatherString
+    );
+    _aiService.startChat();
   }
 
   @override
