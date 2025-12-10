@@ -17,6 +17,7 @@ The application follows a layered architecture:
 *   **Data (`lib/data`):** Mock data sources.
 *   **Widgets (`lib/widgets`):** Reusable UI elements.
 *   **Theme (`lib/theme`):** Application theme configuration.
+*   **Backend (`backend/`):** Standalone Dart server (Shelf + MySQL) for data persistence (currently separate).
 
 ## Building and Running
 
@@ -64,9 +65,11 @@ The application follows a layered architecture:
     *   `models/`: Data classes.
     *   `data/`: Mock data.
     *   `theme/`: Theme definitions.
+*   `backend/`: Server-side code (Dart/Shelf).
 *   `assets/`: Static assets (images, icons).
 *   `test/`: Unit and widget tests.
     *   `screens/`: Widget tests for screens.
+    *   `widgets/`: Widget tests for reusable components.
     *   `services/`: Unit tests for services.
 *   `android/`, `ios/`, `web/`, `windows/`, `macos/`, `linux/`: Platform-specific configuration files.
 
@@ -93,3 +96,15 @@ The application follows a layered architecture:
 *   **Code Quality:**
     *   Addressed linter warnings (unused variables/fields).
     *   Achieved 0 issues in `flutter analyze`.
+
+## Refactor Log (December 9, 2025)
+*   **Backend cleanup:**
+    *   Converted `backend/` from a misconfigured Flutter project to a pure Dart server project (removed unused Flutter dependencies and assets).
+    *   Fixed lint errors in `backend/lib/database/server.dart`.
+*   **Refactoring:**
+    *   Created `GenericDeleteScreen<T>` (`lib/widgets/generic_delete_screen.dart`) to consolidate item deletion logic.
+    *   Refactored `DeleteClothingItemsScreen`, `DeleteFriendsScreen`, and `DeleteOutfitsScreen` to use the new generic widget, removing ~150 lines of duplicated code.
+    *   Extracted `FriendCard` to `lib/widgets/friend_card.dart` for reuse.
+*   **Testing:**
+    *   Created `test/widgets/generic_delete_screen_test.dart` with robust interaction tests.
+    *   Verified **19 passing tests** total.
