@@ -80,6 +80,9 @@ Example outfit block:
 === FINAL NOTE ===
 Always aim to use only the closet items. If you introduce any external items, clearly label them as **not in closet** and give a one-line purchase/borrow suggestion. Ask clarifying questions if the closet list or user preferences are incomplete.
 
+Current Weather:
+{{WEATHER_INFO}}
+
 Current Wardrobe Inventory:
 {{INVENTORY_LIST}}
 

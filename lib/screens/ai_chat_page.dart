@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../services/ai_service.dart';
 import '../services/data_service.dart';
 import '../models/outfit.dart';
+import '../services/weather_service.dart';
 
 /// ChatBubble widget for displaying messages in the chat interface
 /// Supports both user and bot messages with different styling
@@ -256,32 +257,63 @@ class _AIChatPageState extends State<AIChatPage> {
     // Initialize chat with closet context if it's the first load
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _aiService = context.read<AIService>();
-      if (_aiService.messages.isEmpty) {
-        final dataService = context.read<DataService>();
-        _aiService.updateContext(dataService.clothingItems, dataService.userProfile);
-        _aiService.startChat();
-      }
       // Listen for changes in messages and scroll to bottom
       _aiService.addListener(_scrollDown);
+      _initializeChatWithWeather();
     });
+  }
+
+  Future<void> _initializeChatWithWeather() async {
+    if (_aiService.messages.isEmpty) {
+      final dataService = context.read<DataService>();
+      String? weatherString;
+
+      try {
+        final weatherService = WeatherService();
+        final weatherData = await weatherService.getCurrentWeather();
+        if (weatherData.isNotEmpty) {
+           weatherString = 
+            "Temp: ${weatherData['current_temp']}${weatherData['unit']}, "
+            "Max: ${weatherData['max_temp']}${weatherData['unit']}, "
+            "Precip: ${weatherData['precip_chance']}%";
+        }
+      } catch (e) {
+        debugPrint("Weather fetch failed: $e");
+      }
+
+      if (!mounted) return;
+
+      _aiService.updateContext(
+        dataService.clothingItems, 
+        dataService.userProfile,
+        weatherInfo: weatherString
+      );
+      _aiService.startChat();
+    }
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _aiService = context.read<AIService>();
+    // Re-acquire reference if dependencies change, though usually handled in initState/build
+    // _aiService = context.read<AIService>(); // Removed to avoid overwriting and potentially losing the listener reference logic
   }
 
   @override
   void dispose() {
     _scrollController.dispose(); // Dispose controller to avoid memory leaks
-    _aiService.removeListener(_scrollDown); // Remove listener
+    try {
+      _aiService.removeListener(_scrollDown); // Remove listener
+    } catch (e) {
+      // Ignore if aiService was not initialized
+    }
     super.dispose();
   }
 
   void _scrollDown() {
+    if (!mounted) return;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
+      if (mounted && _scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
           duration: const Duration(milliseconds: 300),

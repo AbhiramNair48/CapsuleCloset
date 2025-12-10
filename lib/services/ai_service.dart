@@ -107,16 +107,19 @@ class AIService extends ChangeNotifier {
   }
   
   // A method to explicitly feed context if we want to restart the chat with context
-  void updateContext(List<ClothingItem> items, UserProfile userProfile) {
+  void updateContext(List<ClothingItem> items, UserProfile userProfile, {String? weatherInfo}) {
     _closetItems = items; // Store items for image lookup
     
     final apiKey = _explicitApiKey ?? AppConstants.geminiApiKey;
     if (apiKey.isEmpty || apiKey == 'YOUR_API_KEY_HERE') return;
 
     final inventoryString = InventoryFormatter.formatInventory(items);
+    final weatherString = weatherInfo ?? "Weather data unavailable.";
+
     String systemPrompt = AppPrompts.stylistSystemPrompt
         .replaceAll('{{INVENTORY_LIST}}', inventoryString)
-        .replaceAll('{{USER_PROFILE}}', userProfile.toAIContextString());
+        .replaceAll('{{USER_PROFILE}}', userProfile.toAIContextString())
+        .replaceAll('{{WEATHER_INFO}}', weatherString);
     
     _model = GenerativeModel(
         model: AppConstants.geminiModel,

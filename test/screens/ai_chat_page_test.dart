@@ -20,7 +20,7 @@ class MockAIService extends ChangeNotifier implements AIService {
   bool get isLoading => false;
 
   @override
-  void updateContext(List<ClothingItem> items, UserProfile userProfile) {} // Updated signature
+  void updateContext(List<ClothingItem> items, UserProfile userProfile, {String? weatherInfo}) {} // Updated signature
 
   @override
   void startChat() {}

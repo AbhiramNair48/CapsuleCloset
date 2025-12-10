@@ -49,5 +49,7 @@
 	<string>This app needs access to camera to take photos for your closet.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>This app needs access to photo library to upload images to your closet.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>This app needs access to location to provide weather-based outfit recommendations.</string>
 </dict>
 </plist>
