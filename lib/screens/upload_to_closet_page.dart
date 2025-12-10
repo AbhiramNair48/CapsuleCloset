@@ -1,10 +1,6 @@
-import 'dart:convert';
 import 'dart:io';
-import 'package:capsule_closet_app/services/data_service.dart';
-import 'package:capsule_closet_app/services/image_recog.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:provider/provider.dart';
 import '../widgets/delete_icon_button.dart';
 
 class UploadToClosetPage extends StatefulWidget {
@@ -16,7 +12,6 @@ class UploadToClosetPage extends StatefulWidget {
 
 class _UploadToClosetPageState extends State<UploadToClosetPage> {
   final List<XFile> _selectedImages = [];
-  bool _isUploading = false;
 
   final ImagePicker _picker = ImagePicker();
 
@@ -170,80 +165,34 @@ class _UploadToClosetPageState extends State<UploadToClosetPage> {
                             );
                           }
                         
-                          // Uploads selected items to the closet after processing them.
-                          Future<void> _uploadItem() async {
-                            if (_selectedImages.isEmpty || _isUploading) {
-                              if (_selectedImages.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: const Text('Please select at least one image to upload'),
-                                    backgroundColor: Theme.of(context).colorScheme.error,
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                              }
-                              return;
-                            }
-
-                            setState(() {
-                              _isUploading = true;
-                            });
-
-                            final imageRecognitionService = ImageRecognitionService();
-                            final dataService = Provider.of<DataService>(context, listen: false);
-                            int successCount = 0;
-                            int failureCount = 0;
-
-                            for (final image in _selectedImages) {
-                              try {
-                                final clothingItem = await imageRecognitionService.recognizeImage(image);
-                                if (clothingItem != null) {
-                                  // For manual testing: print the recognized item data
-                                  final jsonString = JsonEncoder.withIndent('  ').convert(clothingItem.toJson());
-                                  debugPrint('--- Recognized Clothing Item ---');
-                                  debugPrint(jsonString);
-
-                                  // This assumes `addClothingItem` is a method in your DataService
-                                  dataService.addClothingItem(clothingItem);
-                                  successCount++;
-                                } else {
-                                  failureCount++;
-                                }
-                              } catch (e) {
-                                failureCount++;
-                                debugPrint('Error processing image: $e');
-                              }
-                            }
-
-                            if (!mounted) return;
-
-                            setState(() {
-                              _isUploading = false;
-                              _selectedImages.clear();
-                            });
-
-                            // Show summary message
-                            String message;
-                            Color backgroundColor;
-
-                            if (successCount > 0 && failureCount == 0) {
-                              message = '$successCount item${successCount > 1 ? 's' : ''} uploaded to closet successfully!';
-                              backgroundColor = Colors.green.shade600;
-                            } else if (successCount > 0 && failureCount > 0) {
-                              message = '$successCount item${successCount > 1 ? 's' : ''} uploaded, $failureCount failed.';
-                              backgroundColor = Colors.orange.shade800;
+                          // Stub function for uploading the items to closet
+                          void _uploadItem() {
+                            if (_selectedImages.isNotEmpty) {
+                              // TODO: Implement actual upload functionality
+                              
+                              // Simulate upload success
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('${_selectedImages.length} items uploaded to closet successfully!'),
+                                  backgroundColor: Colors.green.shade600,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                              
+                              // Clear the selected images after upload
+                              setState(() {
+                                _selectedImages.clear();
+                              });
                             } else {
-                              message = 'Upload failed for all items. Please try again.';
-                              backgroundColor = Theme.of(context).colorScheme.error;
+                              // Show error if no image selected
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: const Text('Please select at least one image to upload'),
+                                  backgroundColor: Theme.of(context).colorScheme.error,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
                             }
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(message),
-                                backgroundColor: backgroundColor,
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
                           }
                         
                           @override
@@ -320,23 +269,12 @@ class _UploadToClosetPageState extends State<UploadToClosetPage> {
                                               width: double.infinity,
                                               height: 56,
                                               child: FilledButton.icon(
-                                                onPressed: _isUploading ? null : _uploadItem,
-                                                icon: _isUploading
-                                                    ? Container() // No icon when loading
-                                                    : const Icon(Icons.cloud_upload_rounded),
-                                                label: _isUploading
-                                                    ? const SizedBox(
-                                                        height: 24,
-                                                        width: 24,
-                                                        child: CircularProgressIndicator(
-                                                          strokeWidth: 3,
-                                                          color: Colors.white,
-                                                        ),
-                                                      )
-                                                    : const Text(
-                                                        'Upload to Closet',
-                                                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                                                      ),
+                                                onPressed: _uploadItem,
+                                                icon: const Icon(Icons.cloud_upload_rounded),
+                                                label: const Text(
+                                                  'Upload to Closet',
+                                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                                                ),
                                                 style: FilledButton.styleFrom(
                                                   shape: RoundedRectangleBorder(
                                                     borderRadius: BorderRadius.circular(16),

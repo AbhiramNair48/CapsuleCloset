@@ -7,13 +7,11 @@ import '../services/data_service.dart';
 class ApparelInfoOverlay extends StatefulWidget {
   final ClothingItem item;
   final VoidCallback onClose;
-  final bool isReadOnly;
 
   const ApparelInfoOverlay({
     super.key,
     required this.item,
     required this.onClose,
-    this.isReadOnly = false,
   });
 
   @override
@@ -128,27 +126,25 @@ class ApparelInfoOverlayState extends State<ApparelInfoOverlay> {
                 const SizedBox(height: _spacing),
                 _buildTextField('Description', _descriptionController, maxLines: 4),
                 const SizedBox(height: _padding),
-                if (!widget.isReadOnly) ...[
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _saveChanges,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(_textFieldBorderRadius),
-                        ),
-                      ),
-                      child: const Text(
-                        'Save Changes',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _saveChanges,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(_textFieldBorderRadius),
                       ),
                     ),
+                    child: const Text(
+                      'Save Changes',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
                   ),
-                  const SizedBox(height: _padding),
-                ],
+                ),
+                const SizedBox(height: _padding),
               ],
             ),
           );
@@ -171,7 +167,6 @@ class ApparelInfoOverlayState extends State<ApparelInfoOverlay> {
         TextField(
           controller: controller,
           maxLines: maxLines,
-          readOnly: widget.isReadOnly,
           decoration: InputDecoration(
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(_textFieldBorderRadius),

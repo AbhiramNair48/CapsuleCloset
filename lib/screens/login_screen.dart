@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
-import 'sign_up_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -15,7 +14,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
-  bool _isPasswordVisible = false;
 
   static const double _logoSize = 150.0;
 
@@ -185,23 +183,11 @@ class _LoginScreenState extends State<LoginScreen> {
                             // Password field
                             TextFormField(
                               controller: _passwordController,
-                              obscureText: !_isPasswordVisible,
-                              decoration: InputDecoration(
+                              obscureText: true,
+                              decoration: const InputDecoration(
                                 labelText: 'Password',
                                 hintText: 'Enter your password',
-                                prefixIcon: const Icon(Icons.lock_outline),
-                                suffixIcon: IconButton(
-                                  icon: Icon(
-                                    _isPasswordVisible
-                                        ? Icons.visibility
-                                        : Icons.visibility_off,
-                                  ),
-                                  onPressed: () {
-                                    setState(() {
-                                      _isPasswordVisible = !_isPasswordVisible;
-                                    });
-                                  },
-                                ),
+                                prefixIcon: Icon(Icons.lock_outline),
                               ),
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
@@ -238,20 +224,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                       ),
                                     )
                                   : const Text('Sign In'),
-                            ),
-                            const SizedBox(height: 16),
-                            
-                            // Sign Up link
-                            TextButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const SignUpScreen(),
-                                  ),
-                                );
-                              },
-                              child: const Text("Don't have an account? Sign Up"),
                             ),
                           ],
                         ),

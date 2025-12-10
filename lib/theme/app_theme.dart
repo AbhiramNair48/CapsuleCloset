@@ -58,7 +58,6 @@ class AppTheme {
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        scrolledUnderElevation: 0,
         centerTitle: true,
         titleTextStyle: GoogleFonts.dancingScript(
           fontSize: 32,
