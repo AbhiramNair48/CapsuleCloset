@@ -1,56 +1,105 @@
 import 'package:mysql_client/mysql_client.dart';
 import 'dart:io';
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
+import 'package:dotenv/dotenv.dart';
 
-// TODO: change db password to .env variable, hashing password for user signup
 Future<void> main() async {
-
-  // final response = await http.get(Uri.parse('https://api.ipify.org?format=json'));
-
-  // if (response.statusCode == 200) {
-  //   print('Your public IP: ${response.body}');
-  // } else {
-  //   print('Failed to get public IP');
-  // }
-
-  final dbIp = "127.0.0.1"; 
+  var env = DotEnv(includePlatformEnvironment: true);
+  if (File('backend/.env').existsSync()) {
+    env.load(['backend/.env']);
+    print('Loaded environment from backend/.env');
+  } else if (File('.env').existsSync()) {
+    env.load(['.env']);
+    print('Loaded environment from .env');
+  } else {
+    print('Warning: No .env file found. Using defaults.');
+  }
+  
+  final dbIp = "127.0.0.1";
   final dbPort = 3306;
   // Create a connection settings object
   final pool = MySQLConnectionPool(
     host: dbIp,
     port: dbPort,
     userName: "root",
-    password: "root",
-    databaseName: "capsule_closet", 
-    maxConnections:  10
+    password: env['DB_PASSWORD'] ?? "root",
+    databaseName: "capsule_closet",
+    maxConnections: 10,
   );
 
-    final server = await HttpServer.bind(
-    InternetAddress.anyIPv4, // NOTE: change to InternetAddress.anyIPv4 or ur ip address
+  final server = await HttpServer.bind(
+    InternetAddress.anyIPv4,
     8080,
   );
 
   print('Server running on http://${server.address.address}:${server.port}/');
+
   await for (HttpRequest request in server) {
+    // Add CORS headers
+    request.response.headers.add('Access-Control-Allow-Origin', '*');
+    request.response.headers.add('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+    request.response.headers.add('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (request.method == 'OPTIONS') {
+      request.response.close();
+      continue;
+    }
+
     if (request.method == 'POST' && request.uri.path == '/signup') {
-      var username = request.uri.queryParameters['username'];
-      var password = request.uri.queryParameters['password'];
-
-      // Signup User
-      await pool.execute('INSERT INTO users (username, password_hash) VALUES(:username, :password_hash)',
-      {"username": username, "password": password});
+      try {
+        final content = await utf8.decoder.bind(request).join();
+        final data = jsonDecode(content) as Map<String, dynamic>;
         
-     
-     }
-    if (request.method == 'POST' && request.uri.path == '/login') {
-     
-     
-     }
-    // request.response
-    //   ..headers.contentType = ContentType.text
-    //   ..write('Hello')
-    //   ..close();
+        final username = data['username'];
+        final email = data['email'];
+        final password = data['password'];
+
+        if (username == null || email == null || password == null) {
+          request.response
+            ..statusCode = HttpStatus.badRequest
+            ..write('Missing required fields')
+            ..close();
+          continue;
+        }
+
+        final passwordHash = sha256.convert(utf8.encode(password)).toString();
+
+        // Signup User
+        await pool.execute(
+          'INSERT INTO users (username, email, password_hash) VALUES (:username, :email, :password_hash)',
+          {"username": username, "email": email, "password_hash": passwordHash},
+        );
+
+        request.response
+          ..statusCode = HttpStatus.ok
+          ..write('User registered successfully')
+          ..close();
+      } catch (e) {
+        print('Error during signup: $e');
+        // Check for duplicate entry
+        if (e.toString().contains('Duplicate entry')) {
+           request.response
+            ..statusCode = HttpStatus.conflict
+            ..write('Username or email already exists')
+            ..close();
+        } else {
+          request.response
+            ..statusCode = HttpStatus.internalServerError
+            ..write('Error registering user: $e')
+            ..close();
+        }
+      }
+    } else if (request.method == 'POST' && request.uri.path == '/login') {
+       // TODO: Implement login
+       request.response
+         ..statusCode = HttpStatus.notImplemented
+         ..close();
+    } else {
+      request.response
+        ..statusCode = HttpStatus.notFound
+        ..write('Not Found')
+        ..close();
+    }
   }
-
 }
-
-

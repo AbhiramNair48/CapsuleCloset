@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+import '../config/app_constants.dart';
 
 /// Authentication service for the application
 class AuthService extends ChangeNotifier {
@@ -53,6 +56,45 @@ class AuthService extends ChangeNotifier {
     _setLoading(false);
     notifyListeners();
     return _isAuthenticated;
+  }
+
+  /// Registers a new user with the backend.
+  /// Returns true if registration is successful, false otherwise.
+  Future<bool> signUp(String username, String email, String password) async {
+    _setLoading(true);
+    try {
+      final url = Uri.parse('${AppConstants.baseUrl}/signup');
+      
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'username': username,
+          'email': email,
+          'password': password,
+        }),
+      );
+
+      _setLoading(false);
+
+      if (response.statusCode == 200) {
+        // Automatically log in the user or just return success?
+        // For now, let's just return success and let the UI navigate to login or home.
+        // If we want auto-login, we would set _currentUserEmail and _isAuthenticated here.
+        return true;
+      } else {
+        if (kDebugMode) {
+          print('Signup failed: ${response.statusCode} - ${response.body}');
+        }
+        return false;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Signup error: $e');
+      }
+      _setLoading(false);
+      return false;
+    }
   }
 
   /// Logs out the current user

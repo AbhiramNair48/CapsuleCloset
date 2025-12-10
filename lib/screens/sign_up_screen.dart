@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import '../services/auth_service.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -24,17 +26,35 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
-  void _handleSignUp() {
+  Future<void> _handleSignUp() async {
     if (_formKey.currentState!.validate()) {
-      // TODO: Implement sign up logic
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sign up functionality not implemented yet')),
+      final authService = Provider.of<AuthService>(context, listen: false);
+      
+      final success = await authService.signUp(
+        _usernameController.text,
+        _emailController.text,
+        _passwordController.text,
       );
+
+      if (!mounted) return;
+
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Account created successfully! Please login.')),
+        );
+        Navigator.pop(context);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to create account. Please try again.')),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isLoading = context.watch<AuthService>().isLoading;
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -132,10 +152,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     },
                   ),
                   const SizedBox(height: 32),
-                  ElevatedButton(
-                    onPressed: _handleSignUp,
-                    child: const Text('Sign Up'),
-                  ),
+                  isLoading 
+                    ? const Center(child: CircularProgressIndicator())
+                    : ElevatedButton(
+                        onPressed: _handleSignUp,
+                        child: const Text('Sign Up'),
+                      ),
                 ],
               ),
             ),
