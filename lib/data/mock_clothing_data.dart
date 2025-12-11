@@ -11,6 +11,9 @@ class MockClothingData {
   static const String typeSweater = 'Sweater';
   static const String typeJacket = 'Jacket';
   static const String typeTrousers = 'Trousers';
+  static const String typeShorts = 'Shorts';
+  static const String typeFootwear = 'Footwear';
+  static const String typeAccessories = 'Accessories';
 
   // Predefined constants for materials
   static const String materialCotton = 'Cotton';
@@ -21,6 +24,8 @@ class MockClothingData {
   static const String materialCashmere = 'Cashmere';
   static const String materialLeather = 'Leather';
   static const String materialChino = 'Chino';
+  static const String materialSynthetic = 'Synthetic';
+  static const String materialCanvas = 'Canvas';
 
   // Predefined constants for colors
   static const String colorBlue = 'Blue';
@@ -30,6 +35,7 @@ class MockClothingData {
   static const String colorGray = 'Gray';
   static const String colorBrown = 'Brown';
   static const String colorKhaki = 'Khaki';
+  static const String colorGreen = 'Green';
 
   // Predefined constants for styles
   static const String styleCasual = 'Casual';
@@ -40,6 +46,14 @@ class MockClothingData {
   static const String styleOversized = 'Oversized';
   static const String styleBiker = 'Biker';
   static const String styleStraight = 'Straight';
+  static const String styleBaggy = 'Baggy';
+  static const String styleButtonUp = 'Button-up';
+  static const String stylePolo = 'Polo';
+  static const String stylePuffer = 'Puffer';
+  static const String styleQuarterZip = 'Quarter-zip';
+  static const String styleTie = 'Tie';
+  static const String styleCargo = 'Cargo';
+  static const String styleZipUp = 'Zip-up';
 
   static const List<ClothingItem> items = [
     ClothingItem(
@@ -113,6 +127,106 @@ class MockClothingData {
       color: colorKhaki,
       style: styleStraight,
       description: 'Khaki straight-leg trousers.',
+    ),
+    // New clothing items
+    ClothingItem(
+      id: '9',
+      imagePath: 'assets/images/clothes/baggy_jeans.jpg',
+      type: typeJeans,
+      material: materialDenim,
+      color: colorBlue,
+      style: styleBaggy,
+      description: 'Comfortable baggy fit jeans for a relaxed look.',
+    ),
+    ClothingItem(
+      id: '10',
+      imagePath: 'assets/images/clothes/boots.jpg',
+      type: typeFootwear,
+      material: materialLeather,
+      color: colorBrown,
+      style: styleCasual,
+      description: 'Stylish brown leather boots for any occasion.',
+    ),
+    ClothingItem(
+      id: '11',
+      imagePath: 'assets/images/clothes/cargo_pants.jpg',
+      type: typeTrousers,
+      material: materialCotton,
+      color: colorBlack,
+      style: styleCargo,
+      description: 'Practical black cargo pants with multiple pockets.',
+    ),
+    ClothingItem(
+      id: '12',
+      imagePath: 'assets/images/clothes/cargo_shorts.jpg',
+      type: typeShorts,
+      material: materialCotton,
+      color: colorGreen,
+      style: styleCargo,
+      description: 'Comfortable forest Green cargo shorts for warm weather.',
+    ),
+    ClothingItem(
+      id: '13',
+      imagePath: 'assets/images/clothes/green_buttonup.jpg',
+      type: typeShirt,
+      material: materialCotton,
+      color: colorGreen,
+      style: styleButtonUp,
+      description: 'A stylish green button-up shirt for casual or semi-formal looks.',
+    ),
+    ClothingItem(
+      id: '14',
+      imagePath: 'assets/images/clothes/polo_shirt.jpg',
+      type: typeShirt,
+      material: materialCotton,
+      color: colorBlue,
+      style: stylePolo,
+      description: 'Classic navy blue polo shirt for a smart-casual appearance.',
+    ),
+    ClothingItem(
+      id: '15',
+      imagePath: 'assets/images/clothes/puffer_jacket.jpg',
+      type: typeJacket,
+      material: materialSynthetic,
+      color: colorBlue,
+      style: stylePuffer,
+      description: 'Warm navy blue puffer jacket for cold weather.',
+    ),
+    ClothingItem(
+      id: '16',
+      imagePath: 'assets/images/clothes/quarterzip.jpg',
+      type: typeSweater,
+      material: materialCotton,
+      color: colorBlue,
+      style: styleQuarterZip,
+      description: 'Cozy light blue quarter-zip sweater for layering.',
+    ),
+    ClothingItem(
+      id: '17',
+      imagePath: 'assets/images/clothes/red_tie.jpg',
+      type: typeAccessories,
+      material: materialSilk,
+      color: colorRed,
+      style: styleTie,
+      description: 'Elegant red silk tie for formal occasions.',
+    ),
+    ClothingItem(
+      id: '18',
+      imagePath: 'assets/images/clothes/white_shoes.jpg',
+      type: typeFootwear,
+      material: materialCanvas,
+      color: colorWhite,
+      style: styleCasual,
+      description: 'Clean white canvas shoes for a fresh look.',
+    ),
+    ClothingItem(
+      id: '19',
+      imagePath: 'assets/images/clothes/zipup_jacket.jpg',
+      type: typeJacket,
+      material: materialSynthetic,
+      color: colorWhite,
+      style: styleZipUp,
+      description: 'Functional off-white zip-up jacket for outdoor activities.',
     ),
   ];
 
