@@ -274,7 +274,7 @@ Future<void> main() async {
         continue;
       }
 
-      final filePath = '../assets/images/clothes/$filename';
+      final filePath = 'assets/images/clothes/$filename';
       final file = File(filePath);
 
       if (await file.exists()) {
