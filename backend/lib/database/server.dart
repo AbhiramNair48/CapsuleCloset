@@ -54,6 +54,8 @@ Future<void> main() async {
         final username = data['username'];
         final email = data['email'];
         final password = data['password'];
+        final gender = data['gender'];
+        final favoriteStyle = data['favorite_style'];
 
         if (username == null || email == null || password == null) {
           request.response
@@ -67,8 +69,14 @@ Future<void> main() async {
 
         // Signup User
         await pool.execute(
-          'INSERT INTO users (username, email, password_hash) VALUES (:username, :email, :password_hash)',
-          {"username": username, "email": email, "password_hash": passwordHash},
+          'INSERT INTO users (username, email, password_hash, gender, favorite_style) VALUES (:username, :email, :password_hash, :gender, :favorite_style)',
+          {
+            "username": username,
+            "email": email,
+            "password_hash": passwordHash,
+            "gender": gender,
+            "favorite_style": favoriteStyle
+          },
         );
 
         request.response
@@ -87,6 +95,104 @@ Future<void> main() async {
           request.response
             ..statusCode = HttpStatus.internalServerError
             ..write('Error registering user: $e')
+            ..close();
+        }
+      }
+    } else if (request.method == 'GET' && request.uri.path == '/users/search') {
+      final query = request.uri.queryParameters['q'];
+      if (query == null || query.isEmpty) {
+        request.response
+          ..statusCode = HttpStatus.badRequest
+          ..write('Missing query parameter q')
+          ..close();
+        continue;
+      }
+
+      try {
+        final results = await pool.execute(
+          'SELECT id, username, favorite_style FROM users WHERE username LIKE :query',
+          {"query": "%$query%"},
+        );
+
+        final users = results.rows.map((row) => {
+          'id': row.colByName('id'),
+          'username': row.colByName('username'),
+          'favorite_style': row.colByName('favorite_style'),
+        }).toList();
+
+        request.response
+          ..statusCode = HttpStatus.ok
+          ..headers.contentType = ContentType.json
+          ..write(jsonEncode(users))
+          ..close();
+      } catch (e) {
+        print('Error searching users: $e');
+        request.response
+          ..statusCode = HttpStatus.internalServerError
+          ..write('Error searching users')
+          ..close();
+      }
+    } else if (request.method == 'POST' && request.uri.path == '/friends/request') {
+      try {
+        final content = await utf8.decoder.bind(request).join();
+        final data = jsonDecode(content) as Map<String, dynamic>;
+        
+        final userEmail = data['user_email'];
+        final friendId = data['friend_id'];
+
+        if (userEmail == null || friendId == null) {
+          request.response
+            ..statusCode = HttpStatus.badRequest
+            ..write('Missing required fields')
+            ..close();
+          continue;
+        }
+
+        // Get user ID from email
+        final userResult = await pool.execute(
+          'SELECT id FROM users WHERE email = :email',
+          {"email": userEmail},
+        );
+
+        if (userResult.rows.isEmpty) {
+          request.response
+            ..statusCode = HttpStatus.notFound
+            ..write('User not found')
+            ..close();
+          continue;
+        }
+
+        final userId = userResult.rows.first.colByName('id');
+
+        if (userId == friendId) {
+             request.response
+            ..statusCode = HttpStatus.badRequest
+            ..write('Cannot add yourself as a friend')
+            ..close();
+            continue;
+        }
+
+        // Insert friendship
+        await pool.execute(
+          'INSERT INTO friendships (user_id, friend_id, status) VALUES (:user_id, :friend_id, \'pending\')',
+          {"user_id": userId, "friend_id": friendId},
+        );
+
+        request.response
+          ..statusCode = HttpStatus.ok
+          ..write('Friend request sent')
+          ..close();
+      } catch (e) {
+        print('Error sending friend request: $e');
+         if (e.toString().contains('Duplicate entry')) {
+           request.response
+            ..statusCode = HttpStatus.conflict
+            ..write('Friend request already sent or exists')
+            ..close();
+        } else {
+          request.response
+            ..statusCode = HttpStatus.internalServerError
+            ..write('Error sending friend request: $e')
             ..close();
         }
       }

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../config/app_constants.dart';
+import 'data_service.dart';
 
 /// Authentication service for the application
 class AuthService extends ChangeNotifier {
@@ -30,10 +31,16 @@ class AuthService extends ChangeNotifier {
   String? _currentUserEmail;
   bool _isAuthenticated = false;
   bool _isLoading = false;
+  DataService? _dataService;
 
   String? get currentUserEmail => _currentUserEmail;
   bool get isAuthenticated => _isAuthenticated;
   bool get isLoading => _isLoading;
+
+  /// Updates the DataService reference
+  void updateDataService(DataService dataService) {
+    _dataService = dataService;
+  }
 
   /// Simulates a login attempt with network delay.
   /// Returns true if credentials match, false otherwise.
@@ -60,7 +67,13 @@ class AuthService extends ChangeNotifier {
 
   /// Registers a new user with the backend.
   /// Returns true if registration is successful, false otherwise.
-  Future<bool> signUp(String username, String email, String password) async {
+  Future<bool> signUp(
+    String username,
+    String email,
+    String password, {
+    String? gender,
+    String? favoriteStyle,
+  }) async {
     _setLoading(true);
     try {
       final url = Uri.parse('${AppConstants.baseUrl}/signup');
@@ -72,6 +85,8 @@ class AuthService extends ChangeNotifier {
           'username': username,
           'email': email,
           'password': password,
+          'gender': gender,
+          'favorite_style': favoriteStyle,
         }),
       );
 
@@ -101,6 +116,7 @@ class AuthService extends ChangeNotifier {
   void logout() {
     _currentUserEmail = null;
     _isAuthenticated = false;
+    _dataService?.logout();
     notifyListeners();
   }
 

@@ -16,6 +16,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _genderController = TextEditingController();
+  final _favoriteStyleController = TextEditingController();
 
   @override
   void dispose() {
@@ -23,6 +25,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _genderController.dispose();
+    _favoriteStyleController.dispose();
     super.dispose();
   }
 
@@ -34,6 +38,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
         _usernameController.text,
         _emailController.text,
         _passwordController.text,
+        gender: _genderController.text.isNotEmpty ? _genderController.text : null,
+        favoriteStyle: _favoriteStyleController.text.isNotEmpty ? _favoriteStyleController.text : null,
       );
 
       if (!mounted) return;
@@ -114,6 +120,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       }
                       return null;
                     },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _genderController,
+                    decoration: const InputDecoration(
+                      labelText: 'Gender (Optional)',
+                      prefixIcon: Icon(Icons.person),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _favoriteStyleController,
+                    decoration: const InputDecoration(
+                      labelText: 'Favorite Style (Optional)',
+                      prefixIcon: Icon(Icons.style),
+                    ),
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
