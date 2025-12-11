@@ -28,13 +28,14 @@ class AuthService extends ChangeNotifier {
     },
   ];
 
-  String? _currentUserEmail;
+  Map<String, dynamic>? _currentUser;
   bool _isAuthenticated = false;
   bool _isLoading = false;
   DataService? _dataService;
 
-  String? get currentUserEmail => _currentUserEmail;
-  bool get isAuthenticated => _isAuthenticated;
+  Map<String, dynamic>? get currentUser => _currentUser;
+  String? get currentUserEmail => _currentUser?['email'];
+  bool get isAuthenticated => _currentUser != null;
   bool get isLoading => _isLoading;
 
   /// Updates the DataService reference
@@ -45,13 +46,12 @@ class AuthService extends ChangeNotifier {
   /// Simulates a login attempt with network delay.
   /// Returns true if credentials match, false otherwise.
   Future<bool> login(String email, String password) async {
-    
     _setLoading(true);
     await Future.delayed(_networkDelay);
-      
-      try {
+
+    try {
       final url = Uri.parse('${AppConstants.baseUrl}/login');
-      
+
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
@@ -63,31 +63,30 @@ class AuthService extends ChangeNotifier {
 
       _setLoading(false);
       if (response.statusCode == 200) {
-        // Logic for successs
-        _currentUserEmail = email;
+        final responseData = jsonDecode(response.body);
+        _currentUser = responseData['user'];
         _isAuthenticated = true;
+        notifyListeners();
         return true;
       } else {
         if (kDebugMode) {
           print('Login failed: ${response.statusCode} - ${response.body}');
         }
-        _currentUserEmail = null;
+        _currentUser = null;
         _isAuthenticated = false;
+        notifyListeners();
+        return false;
       }
     } catch (e) {
       if (kDebugMode) {
         print('Login error: $e');
       }
-       _currentUserEmail = null;
+      _currentUser = null;
       _isAuthenticated = false;
       _setLoading(false);
+      notifyListeners();
+      return false;
     }
-      
-
-    _setLoading(false);
-    notifyListeners();
-    
-    return _isAuthenticated;
   }
 
   /// Registers a new user with the backend.
@@ -135,7 +134,7 @@ class AuthService extends ChangeNotifier {
 
   /// Logs out the current user
   void logout() {
-    _currentUserEmail = null;
+    _currentUser = null;
     _isAuthenticated = false;
     // _dataService?.logout();
     notifyListeners();

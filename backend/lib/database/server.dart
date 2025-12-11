@@ -201,47 +201,106 @@ Future<void> main() async {
 
       // login
     } else if (request.method == 'POST' && request.uri.path == '/login') {
-
-      final content = await utf8.decoder.bind(request).join();
-      final data = jsonDecode(content) as Map<String, dynamic>;
-
-      final email = data['email'];
-      final password = data['password'];
-
-      
       try {
-        // Attempt Login 
-        final result = await pool.execute(
-          'SELECT id, email, password_hash FROM users WHERE email = :email LIMIT 1',
-          {
-            "email": email,
+        final content = await utf8.decoder.bind(request).join();
+        final data = jsonDecode(content) as Map<String, dynamic>;
 
-          },
-        );
+        final email = data['email'];
+        final password = data['password'];
 
-        if (result.isEmpty){
+        if (email == null || password == null) {
           request.response
-            ..statusCode = HttpStatus.unauthorized
-            ..write('Invalid Email')
+            ..statusCode = HttpStatus.badRequest
+            ..write('Missing email or password')
             ..close();
-        }else{
-          final row = result.first;
-          final dataHash = row['password_hash'];
-
+          continue;
         }
 
-        request.response
-          ..statusCode = HttpStatus.ok
-          ..write('Successful login!')
-          ..close();
+        // Attempt Login
+        final result = await pool.execute(
+          'SELECT id, email, username, password_hash FROM users WHERE email = :email LIMIT 1',
+          {"email": email},
+        );
 
-      }catch (e){
+        if (result.rows.isEmpty) {
+          request.response
+            ..statusCode = HttpStatus.unauthorized
+            ..write('Invalid email or password')
+            ..close();
+          continue;
+        }
+
+        final row = result.rows.first;
+        final storedHash = row.colByName('password_hash');
+        final passwordHash = sha256.convert(utf8.encode(password)).toString();
+
+        if (passwordHash == storedHash) {
+          final user = {
+            'id': row.colByName('id'),
+            'username': row.colByName('username'),
+            'email': row.colByName('email'),
+          };
+          request.response
+            ..statusCode = HttpStatus.ok
+            ..headers.contentType = ContentType.json
+            ..write(jsonEncode({'message': 'Successful login!', 'user': user}))
+            ..close();
+        } else {
+          request.response
+            ..statusCode = HttpStatus.unauthorized
+            ..write('Invalid email or password')
+            ..close();
+        }
+      } catch (e) {
+        print('Error during login: $e');
         request.response
-          ..statusCode = HttpStatus.unauthorized
+          ..statusCode = HttpStatus.internalServerError
           ..write('Error Logging In: $e')
           ..close();
       }
+    } else if (request.method == 'GET' && request.uri.path == '/closet') {
+      final userId = request.uri.queryParameters['user_id'];
+      if (userId == null) {
+        request.response
+          ..statusCode = HttpStatus.badRequest
+          ..write('Missing user_id query parameter')
+          ..close();
+        continue;
+      }
 
+      try {
+        final results = await pool.execute(
+          'SELECT id, img_link, type, material, color, style, description FROM closet WHERE user_id = :user_id',
+          {'user_id': userId},
+        );
+
+        final items = results.rows.map((row) {
+          final imgLink = row.colByName('img_link');
+          final imagePath = (imgLink != null) ? 'assets/images/clothes/$imgLink' : '';
+          
+          return {
+            'id': row.colByName('id').toString(),
+            'imagePath': imagePath,
+            'type': row.colByName('type'),
+            'material': row.colByName('material'),
+            'color': row.colByName('color'),
+            'style': row.colByName('style'),
+            'description': row.colByName('description'),
+          };
+        }).toList();
+
+        request.response
+          ..statusCode = HttpStatus.ok
+          ..headers.contentType = ContentType.json
+          ..write(jsonEncode(items))
+          ..close();
+      } catch (e) {
+        print('Error fetching closet items: $e');
+        request.response
+          ..statusCode = HttpStatus.internalServerError
+          ..write('Error fetching closet items: $e')
+          ..close();
+      }
     } else {
       request.response
         ..statusCode = HttpStatus.notFound

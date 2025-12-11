@@ -56,6 +56,19 @@ class ClothingItem {
     };
   }
 
+  /// Creates a ClothingItem from a JSON object
+  factory ClothingItem.fromJson(Map<String, dynamic> json) {
+    return ClothingItem(
+      id: json['id'] as String,
+      imagePath: json['imagePath'] as String,
+      type: json['type'] as String,
+      material: json['material'] as String,
+      color: json['color'] as String,
+      style: json['style'] as String,
+      description: json['description'] as String,
+    );
+  }
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;

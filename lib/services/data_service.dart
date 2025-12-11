@@ -1,14 +1,19 @@
+import 'dart:convert';
+import 'package:capsule_closet_app/config/app_constants.dart';
+import 'package:capsule_closet_app/services/auth_service.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import '../models/clothing_item.dart';
 import '../models/outfit.dart';
 import '../models/friend.dart';
 import '../models/user_profile.dart';
-import '../data/mock_clothing_data.dart';
 import '../data/mock_outfit_data.dart';
 import '../data/mock_friends_data.dart';
 
 /// Service class to manage all application data
 class DataService extends ChangeNotifier {
+  final AuthService? _authService;
+
   List<ClothingItem> _clothingItems = [];
   List<Outfit> _outfits = [];
   List<Friend> _friends = [];
@@ -21,16 +26,67 @@ class DataService extends ChangeNotifier {
   List<ClothingItem> get filteredClothingItems => _filteredClothingItems;
   UserProfile get userProfile => _userProfile;
 
-  DataService() {
+  DataService(this._authService) {
+    _authService?.addListener(_onAuthStateChanged);
     _initializeData();
   }
 
-  /// Initialize data from mock sources
+  @override
+  void dispose() {
+    _authService?.removeListener(_onAuthStateChanged);
+    super.dispose();
+  }
+
+  void _onAuthStateChanged() {
+    if (_authService?.isAuthenticated == true && _authService?.currentUser != null) {
+      final userId = _authService!.currentUser!['id'];
+      fetchClothingItems(userId.toString());
+    } else {
+      _clearData();
+    }
+  }
+
+  /// Initialize data from mock sources for outfits and friends. Clothing is fetched from backend.
   void _initializeData() {
-    _clothingItems = List.from(MockClothingData.items);
     _outfits = MockOutfitData.getOutfits();
     _friends = List.from(mockFriends);
-    _filteredClothingItems = List.from(_clothingItems);
+    // Check if user is already authenticated on startup
+    if (_authService?.isAuthenticated == true && _authService?.currentUser != null) {
+      final userId = _authService!.currentUser!['id'];
+      fetchClothingItems(userId.toString());
+    }
+  }
+  
+  /// Fetches clothing items for the given user from the backend
+  Future<void> fetchClothingItems(String userId) async {
+    try {
+      final url = Uri.parse('${AppConstants.baseUrl}/closet?user_id=$userId');
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> itemsJson = jsonDecode(response.body);
+        _clothingItems = itemsJson.map((json) => ClothingItem.fromJson(json)).toList();
+        _filteredClothingItems = List.from(_clothingItems);
+      } else {
+        if (kDebugMode) {
+          print('Failed to load clothing items: ${response.statusCode}');
+        }
+        _clothingItems = [];
+        _filteredClothingItems = [];
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error fetching clothing items: $e');
+      }
+      _clothingItems = [];
+      _filteredClothingItems = [];
+    }
+    notifyListeners();
+  }
+  
+  void _clearData() {
+    _clothingItems = [];
+    _filteredClothingItems = [];
     notifyListeners();
   }
 
