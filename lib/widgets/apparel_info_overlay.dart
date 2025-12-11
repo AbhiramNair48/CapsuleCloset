@@ -26,6 +26,7 @@ class ApparelInfoOverlayState extends State<ApparelInfoOverlay> {
   late TextEditingController _colorController;
   late TextEditingController _styleController;
   late TextEditingController _descriptionController;
+  late bool _isPublic;
 
   static const double _initialChildSize = 0.8;
   static const double _minChildSize = 0.4;
@@ -44,6 +45,7 @@ class ApparelInfoOverlayState extends State<ApparelInfoOverlay> {
     _colorController = TextEditingController(text: widget.item.color);
     _styleController = TextEditingController(text: widget.item.style);
     _descriptionController = TextEditingController(text: widget.item.description);
+    _isPublic = widget.item.isPublic;
   }
 
   @override
@@ -128,6 +130,20 @@ class ApparelInfoOverlayState extends State<ApparelInfoOverlay> {
                 const SizedBox(height: _spacing),
                 _buildTextField('Description', _descriptionController, maxLines: 4),
                 const SizedBox(height: _padding),
+                if (!widget.isReadOnly)
+                  SwitchListTile(
+                    title: const Text('Make Public'),
+                    subtitle: const Text('Allow friends to see this item.'),
+                    value: _isPublic,
+                    onChanged: (bool value) {
+                      setState(() {
+                        _isPublic = value;
+                      });
+                      context
+                          .read<DataService>()
+                          .updateClothingItemPublicStatus(widget.item.id, value);
+                    },
+                  ),
                 if (!widget.isReadOnly) ...[
                   SizedBox(
                     width: double.infinity,

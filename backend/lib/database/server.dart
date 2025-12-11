@@ -278,7 +278,9 @@ Future<void> main() async {
       final file = File(filePath);
 
       if (await file.exists()) {
-        request.response.headers.contentType = ContentType.parse(lookupMimeType(filename) ?? 'application/octet-stream');
+        final contentType = lookupMimeType(filename) ?? 'application/octet-stream';
+        request.response.headers.contentType = ContentType.parse(contentType);
+        print('Serving image $filename with Content-Type: $contentType');
         try {
           await request.response.addStream(file.openRead());
           await request.response.close();
@@ -359,7 +361,7 @@ Future<void> main() async {
         final newId = insertResult.lastInsertID;
 
         final newItemResult = await pool.execute(
-            'SELECT id, img_link, clothing_type, material, color, style, description FROM closet WHERE id = :id',
+            'SELECT id, img_link, clothing_type, material, color, style, description, public FROM closet WHERE id = :id',
             {'id': newId}
         );
 
@@ -370,6 +372,7 @@ Future<void> main() async {
         final row = newItemResult.rows.first;
         final imgLink = row.colByName('img_link');
         final imagePath = (imgLink != null) ? 'http://10.0.2.2:8080/images/$imgLink' : '';
+        print('Generated imagePath for new item: $imagePath');
         
         final newItemJson = {
           'id': row.colByName('id').toString(),
@@ -379,6 +382,7 @@ Future<void> main() async {
           'color': row.colByName('color'),
           'style': row.colByName('style'),
           'description': row.colByName('description'),
+          'public': row.colByName('public') == 1,
         };
 
         request.response
@@ -392,6 +396,97 @@ Future<void> main() async {
         request.response
           ..statusCode = HttpStatus.internalServerError
           ..write('Error during upload: $e')
+          ..close();
+      }
+    } else if (request.method == 'PATCH' && request.uri.path.contains('/closet/') && request.uri.path.endsWith('/public')) {
+      try {
+        final pathSegments = request.uri.pathSegments;
+        final itemId = pathSegments[pathSegments.length - 2];
+        
+        final content = await utf8.decoder.bind(request).join();
+        final data = jsonDecode(content) as Map<String, dynamic>;
+        final isPublic = data['public'] as bool;
+
+        await pool.execute(
+          'UPDATE closet SET public = :public WHERE id = :id',
+          {'public': isPublic ? 1 : 0, 'id': itemId},
+        );
+
+        request.response
+          ..statusCode = HttpStatus.ok
+          ..write('Updated successfully')
+          ..close();
+
+      } catch (e) {
+        print('Error updating public status: $e');
+        request.response
+          ..statusCode = HttpStatus.internalServerError
+          ..write('Error updating public status: $e')
+          ..close();
+      }
+    } else if (request.method == 'PATCH' && request.uri.path.contains('/closet/') && !request.uri.path.endsWith('/public')) {
+      try {
+        final pathSegments = request.uri.pathSegments;
+        final itemId = pathSegments[pathSegments.length - 1]; // Get the ID from the URL
+
+        final content = await utf8.decoder.bind(request).join();
+        final data = jsonDecode(content) as Map<String, dynamic>;
+
+        // Build the update query dynamically
+        final updates = <String, dynamic>{};
+        if (data.containsKey('type')) updates['clothing_type'] = data['type'];
+        if (data.containsKey('material')) updates['material'] = data['material'];
+        if (data.containsKey('color')) updates['color'] = data['color'];
+        if (data.containsKey('style')) updates['style'] = data['style'];
+        if (data.containsKey('description')) updates['description'] = data['description'];
+
+        if (updates.isEmpty) {
+          request.response
+            ..statusCode = HttpStatus.badRequest
+            ..write('No fields to update')
+            ..close();
+          continue;
+        }
+
+        final updateQueryParts = updates.keys.map((key) => '$key = :$key').join(', ');
+        
+        await pool.execute(
+          'UPDATE closet SET $updateQueryParts WHERE id = :id',
+          {...updates, 'id': itemId},
+        );
+
+        request.response
+          ..statusCode = HttpStatus.ok
+          ..write('Clothing item updated successfully')
+          ..close();
+
+      } catch (e) {
+        print('Error updating clothing item: $e');
+        request.response
+          ..statusCode = HttpStatus.internalServerError
+          ..write('Error updating clothing item: $e')
+          ..close();
+      }
+    } else if (request.method == 'DELETE' && request.uri.path.startsWith('/closet/')) {
+      try {
+        final pathSegments = request.uri.pathSegments;
+        final itemId = pathSegments.last;
+
+        await pool.execute(
+          'DELETE FROM closet WHERE id = :id',
+          {'id': itemId},
+        );
+
+        request.response
+          ..statusCode = HttpStatus.ok
+          ..write('Clothing item deleted successfully')
+          ..close();
+
+      } catch (e) {
+        print('Error deleting clothing item: $e');
+        request.response
+          ..statusCode = HttpStatus.internalServerError
+          ..write('Error deleting clothing item: $e')
           ..close();
       }
     } else if (request.method == 'GET' && request.uri.path == '/friends') {
@@ -438,7 +533,7 @@ Future<void> main() async {
 
         // 3. Get all public clothing items for all friends
         final itemsResult = await pool.execute(
-          'SELECT id, user_id, img_link, clothing_type, material, color, style, description FROM closet WHERE user_id IN (${friendIds.join(',')}) AND public = TRUE',
+          'SELECT id, user_id, img_link, clothing_type, material, color, style, description, public FROM closet WHERE user_id IN (${friendIds.join(',')}) AND public = TRUE',
         );
 
         // 4. Group items by friend
@@ -456,6 +551,7 @@ Future<void> main() async {
             'color': row.colByName('color'),
             'style': row.colByName('style'),
             'description': row.colByName('description'),
+            'public': row.colByName('public') == 1,
           };
 
           if (!itemsByFriendId.containsKey(friendId)) {
@@ -590,7 +686,7 @@ Future<void> main() async {
 
       try {
         final results = await pool.execute(
-          'SELECT id, img_link, clothing_type, material, color, style, description FROM closet WHERE user_id = :user_id',
+          'SELECT id, img_link, clothing_type, material, color, style, description, public FROM closet WHERE user_id = :user_id',
           {'user_id': userId},
         );
 
@@ -606,6 +702,7 @@ Future<void> main() async {
             'color': row.colByName('color'),
             'style': row.colByName('style'),
             'description': row.colByName('description'),
+            'public': row.colByName('public') == 1,
           };
         }).toList();
 
