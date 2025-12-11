@@ -13,6 +13,7 @@ dependencies:
   mysql_client: ^0.0.27
   crypto: ^3.0.7
   dotenv: ^4.2.0
+  mime: ^1.0.5
 
 dev_dependencies:
   lints: ^3.0.0

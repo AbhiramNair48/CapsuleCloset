@@ -1,14 +1,18 @@
+import 'dart:convert';
+import 'package:capsule_closet_app/config/app_constants.dart';
+import 'package:capsule_closet_app/services/auth_service.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import '../models/clothing_item.dart';
 import '../models/outfit.dart';
 import '../models/friend.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/user_profile.dart';
-import '../data/mock_clothing_data.dart';
-import '../data/mock_outfit_data.dart';
-import '../data/mock_friends_data.dart';
 
 /// Service class to manage all application data
 class DataService extends ChangeNotifier {
+  final AuthService? _authService;
+
   List<ClothingItem> _clothingItems = [];
   List<Outfit> _outfits = [];
   List<Friend> _friends = [];
@@ -21,16 +25,167 @@ class DataService extends ChangeNotifier {
   List<ClothingItem> get filteredClothingItems => _filteredClothingItems;
   UserProfile get userProfile => _userProfile;
 
-  DataService() {
+  DataService(this._authService) {
+    _authService?.addListener(_onAuthStateChanged);
     _initializeData();
   }
 
-  /// Initialize data from mock sources
+  @override
+  void dispose() {
+    _authService?.removeListener(_onAuthStateChanged);
+    super.dispose();
+  }
+
+  void _onAuthStateChanged() {
+    if (_authService?.isAuthenticated == true && _authService?.currentUser != null) {
+      final userId = _authService!.currentUser!['id'];
+      fetchClothingItems(userId.toString());
+      fetchOutfits(userId.toString());
+      fetchFriends(userId.toString());
+    } else {
+      _clearData();
+    }
+  }
+
+  /// Initialize data. All data is fetched from the backend.
   void _initializeData() {
-    _clothingItems = List.from(MockClothingData.items);
-    _outfits = MockOutfitData.getOutfits();
-    _friends = List.from(mockFriends);
-    _filteredClothingItems = List.from(_clothingItems);
+    // Check if user is already authenticated on startup
+    if (_authService?.isAuthenticated == true && _authService?.currentUser != null) {
+      final userId = _authService!.currentUser!['id'];
+      fetchClothingItems(userId.toString());
+      fetchOutfits(userId.toString());
+      fetchFriends(userId.toString());
+    }
+  }
+  
+  /// Fetches clothing items for the given user from the backend
+  Future<void> fetchClothingItems(String userId) async {
+    try {
+      final url = Uri.parse('${AppConstants.baseUrl}/closet?user_id=$userId');
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> itemsJson = jsonDecode(response.body);
+        _clothingItems = itemsJson.map((json) => ClothingItem.fromJson(json)).toList();
+        _filteredClothingItems = List.from(_clothingItems);
+      } else {
+        if (kDebugMode) {
+          print('Failed to load clothing items: ${response.statusCode}');
+        }
+        _clothingItems = [];
+        _filteredClothingItems = [];
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error fetching clothing items: $e');
+      }
+      _clothingItems = [];
+      _filteredClothingItems = [];
+    }
+    notifyListeners();
+  }
+
+  /// Fetches outfits for the given user from the backend
+  Future<void> fetchOutfits(String userId) async {
+    try {
+      final url = Uri.parse('${AppConstants.baseUrl}/outfits?user_id=$userId');
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> itemsJson = jsonDecode(response.body);
+        _outfits = itemsJson.map((json) => Outfit.fromJson(json)).toList();
+      } else {
+        if (kDebugMode) {
+          print('Failed to load outfits: ${response.statusCode}');
+        }
+        _outfits = [];
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error fetching outfits: $e');
+      }
+      _outfits = [];
+    }
+    notifyListeners();
+  }
+
+  /// Fetches friends for the given user from the backend
+  Future<void> fetchFriends(String userId) async {
+    try {
+      final url = Uri.parse('${AppConstants.baseUrl}/friends?user_id=$userId');
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> itemsJson = jsonDecode(response.body);
+        _friends = itemsJson.map((json) => Friend.fromJson(json)).toList();
+      } else {
+        if (kDebugMode) {
+          print('Failed to load friends: ${response.statusCode}');
+        }
+        _friends = [];
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error fetching friends: $e');
+      }
+      _friends = [];
+    }
+    notifyListeners();
+  }
+
+  /// Uploads a new clothing item to the backend
+  Future<ClothingItem?> uploadClothingItem({
+    required XFile imageFile,
+    required ClothingItem recognizedData,
+    required String userId,
+  }) async {
+    try {
+      final url = Uri.parse('${AppConstants.baseUrl}/closet/upload');
+      final request = http.MultipartRequest('POST', url);
+
+      // Add image file
+      request.files.add(await http.MultipartFile.fromPath('image', imageFile.path, filename: imageFile.name));
+
+      // Add data fields
+      request.fields['user_id'] = userId;
+      request.fields['type'] = recognizedData.type;
+      request.fields['color'] = recognizedData.color;
+      request.fields['material'] = recognizedData.material;
+      request.fields['style'] = recognizedData.style;
+      request.fields['description'] = recognizedData.description;
+      request.fields['public'] = 'false'; // Defaulting to false
+
+      final response = await request.send();
+
+      if (response.statusCode == 201) {
+        final responseBody = await response.stream.bytesToString();
+        final newItem = ClothingItem.fromJson(jsonDecode(responseBody));
+        
+        // Add the new item to the local state
+        addClothingItem(newItem); // This already calls notifyListeners()
+        
+        return newItem;
+      } else {
+        if (kDebugMode) {
+          print('Failed to upload item: ${response.statusCode}');
+          final responseBody = await response.stream.bytesToString();
+          print('Response body: $responseBody');
+        }
+        return null;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error uploading item: $e');
+      }
+      return null;
+    }
+  }
+  
+  void _clearData() {
+    _clothingItems = [];
+    _filteredClothingItems = [];
+    _outfits = [];
+    _friends = [];
     notifyListeners();
   }
 

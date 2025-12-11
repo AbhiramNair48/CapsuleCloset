@@ -23,7 +23,7 @@ class ClothingItemCard extends StatelessWidget {
         child: Stack(
           children: [
             SizedBox.expand(
-              child: Image.asset(
+              child: Image.network(
                 item.imagePath,
                 fit: BoxFit.cover,
                 cacheWidth: 300,

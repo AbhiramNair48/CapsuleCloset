@@ -3,8 +3,14 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:dotenv/dotenv.dart';
+import 'package:mime/mime.dart';
 
+
+//TODO: move response closes to the end 
 Future<void> main() async {
+  print('Server starting...');
+  print('Current working directory: ${Directory.current.path}');
+
   var env = DotEnv(includePlatformEnvironment: true);
   if (File('backend/.env').existsSync()) {
     env.load(['backend/.env']);
@@ -54,6 +60,8 @@ Future<void> main() async {
         final username = data['username'];
         final email = data['email'];
         final password = data['password'];
+        final gender = data['gender'];
+        final favoriteStyle = data['favorite_style'];
 
         if (username == null || email == null || password == null) {
           request.response
@@ -67,8 +75,14 @@ Future<void> main() async {
 
         // Signup User
         await pool.execute(
-          'INSERT INTO users (username, email, password_hash) VALUES (:username, :email, :password_hash)',
-          {"username": username, "email": email, "password_hash": passwordHash},
+          'INSERT INTO users (username, email, password_hash, gender, favorite_style) VALUES (:username, :email, :password_hash, :gender, :favorite_style)',
+          {
+            "username": username,
+            "email": email,
+            "password_hash": passwordHash,
+            "gender": gender,
+            "favorite_style": favoriteStyle
+          },
         );
 
         request.response
@@ -90,11 +104,523 @@ Future<void> main() async {
             ..close();
         }
       }
+    } else if (request.method == 'GET' && request.uri.path == '/users/search') {
+      final query = request.uri.queryParameters['q'];
+      if (query == null || query.isEmpty) {
+        request.response
+          ..statusCode = HttpStatus.badRequest
+          ..write('Missing query parameter q')
+          ..close();
+        continue;
+      }
+
+      try {
+        final results = await pool.execute(
+          'SELECT id, username, favorite_style FROM users WHERE username LIKE :query',
+          {"query": "%$query%"},
+        );
+
+        final users = results.rows.map((row) => {
+          'id': row.colByName('id'),
+          'username': row.colByName('username'),
+          'favorite_style': row.colByName('favorite_style'),
+        }).toList();
+
+        request.response
+          ..statusCode = HttpStatus.ok
+          ..headers.contentType = ContentType.json
+          ..write(jsonEncode(users))
+          ..close();
+      } catch (e) {
+        print('Error searching users: $e');
+        request.response
+          ..statusCode = HttpStatus.internalServerError
+          ..write('Error searching users')
+          ..close();
+      }
+    } else if (request.method == 'POST' && request.uri.path == '/friends/request') {
+      try {
+        final content = await utf8.decoder.bind(request).join();
+        final data = jsonDecode(content) as Map<String, dynamic>;
+        
+        final userEmail = data['user_email'];
+        final friendId = data['friend_id'];
+
+        if (userEmail == null || friendId == null) {
+          request.response
+            ..statusCode = HttpStatus.badRequest
+            ..write('Missing required fields')
+            ..close();
+          continue;
+        }
+
+        // Get user ID from email
+        final userResult = await pool.execute(
+          'SELECT id FROM users WHERE email = :email',
+          {"email": userEmail},
+        );
+
+        if (userResult.rows.isEmpty) {
+          request.response
+            ..statusCode = HttpStatus.notFound
+            ..write('User not found')
+            ..close();
+          continue;
+        }
+
+        final userId = userResult.rows.first.colByName('id');
+
+        if (userId == friendId) {
+             request.response
+            ..statusCode = HttpStatus.badRequest
+            ..write('Cannot add yourself as a friend')
+            ..close();
+            continue;
+        }
+
+        // Insert friendship
+        await pool.execute(
+          'INSERT INTO friendships (user_id, friend_id, status) VALUES (:user_id, :friend_id, \'pending\')',
+          {"user_id": userId, "friend_id": friendId},
+        );
+
+        request.response
+          ..statusCode = HttpStatus.ok
+          ..write('Friend request sent')
+          ..close();
+      } catch (e) {
+        print('Error sending friend request: $e');
+         if (e.toString().contains('Duplicate entry')) {
+           request.response
+            ..statusCode = HttpStatus.conflict
+            ..write('Friend request already sent or exists')
+            ..close();
+        } else {
+          request.response
+            ..statusCode = HttpStatus.internalServerError
+            ..write('Error sending friend request: $e')
+            ..close();
+        }
+      }
+
+      // login
     } else if (request.method == 'POST' && request.uri.path == '/login') {
-       // TODO: Implement login
-       request.response
-         ..statusCode = HttpStatus.notImplemented
-         ..close();
+      try {
+        final content = await utf8.decoder.bind(request).join();
+        final data = jsonDecode(content) as Map<String, dynamic>;
+
+        final email = data['email'];
+        final password = data['password'];
+
+        if (email == null || password == null) {
+          request.response
+            ..statusCode = HttpStatus.badRequest
+            ..write('Missing email or password')
+            ..close();
+          continue;
+        }
+
+        // Attempt Login
+        final result = await pool.execute(
+          'SELECT id, email, username, password_hash FROM users WHERE email = :email LIMIT 1',
+          {"email": email},
+        );
+
+        if (result.rows.isEmpty) {
+          request.response
+            ..statusCode = HttpStatus.unauthorized
+            ..write('Invalid email or password')
+            ..close();
+          continue;
+        }
+
+        final row = result.rows.first;
+        final storedHash = row.colByName('password_hash');
+        final passwordHash = sha256.convert(utf8.encode(password)).toString();
+
+        if (passwordHash == storedHash) {
+          final user = {
+            'id': row.colByName('id'),
+            'username': row.colByName('username'),
+            'email': row.colByName('email'),
+          };
+          request.response
+            ..statusCode = HttpStatus.ok
+            ..headers.contentType = ContentType.json
+            ..write(jsonEncode({'message': 'Successful login!', 'user': user}))
+            ..close();
+        } else {
+          request.response
+            ..statusCode = HttpStatus.unauthorized
+            ..write('Invalid email or password')
+            ..close();
+        }
+      } catch (e) {
+        print('Error during login: $e');
+        request.response
+          ..statusCode = HttpStatus.internalServerError
+          ..write('Error Logging In: $e')
+          ..close();
+      }
+    } else if (request.method == 'GET' && request.uri.path.startsWith('/images/')) {
+      final filename = request.uri.pathSegments.last;
+
+      // Sanitize filename to prevent path traversal attacks
+      if (filename.contains('..') || filename.contains('/')) {
+        request.response
+          ..statusCode = HttpStatus.badRequest
+          ..write('Invalid filename')
+          ..close();
+        continue;
+      }
+
+      final filePath = '../assets/images/clothes/$filename';
+      final file = File(filePath);
+
+      if (await file.exists()) {
+        request.response.headers.contentType = ContentType.parse(lookupMimeType(filename) ?? 'application/octet-stream');
+        try {
+          await request.response.addStream(file.openRead());
+          await request.response.close();
+        } catch (e) {
+          print('Error serving file: $e');
+        }
+      } else {
+        request.response
+          ..statusCode = HttpStatus.notFound
+          ..write('Image not found')
+          ..close();
+      }
+    } else if (request.method == 'POST' && request.uri.path == '/closet/upload') {
+      final boundary = request.headers.contentType?.parameters['boundary'];
+      if (boundary == null) {
+        request.response
+          ..statusCode = HttpStatus.badRequest
+          ..write('Missing multipart boundary')
+          ..close();
+        continue;
+      }
+
+      try {
+        String? savedFilename;
+        final itemData = <String, String>{};
+        final transformer = MimeMultipartTransformer(boundary);
+        final stream = request.cast<List<int>>().transform(transformer);
+
+        await for (final part in stream) {
+          final contentDisposition = part.headers['content-disposition'];
+          final disposition = HeaderValue.parse(contentDisposition!);
+          final partName = disposition.parameters['name'];
+
+          if (partName == 'image') {
+            final originalFilename = disposition.parameters['filename'];
+            final timestamp = DateTime.now().millisecondsSinceEpoch;
+            final extension = originalFilename?.split('.').last ?? 'jpg';
+            savedFilename = '$timestamp.$extension';
+            
+            final filePath = 'assets/images/clothes/$savedFilename';
+            final file = File(filePath);
+            print('Attempting to save image to absolute path: ${file.absolute.path}');
+            await file.create(recursive: true);
+            await part.pipe(file.openWrite());
+          } else {
+            final value = await utf8.decodeStream(part);
+            if(partName != null) {
+              itemData[partName] = value;
+            }
+          }
+        }
+
+        if (savedFilename == null || itemData['user_id'] == null) {
+            request.response
+            ..statusCode = HttpStatus.badRequest
+            ..write('Missing image or user_id')
+            ..close();
+            continue;
+        }
+
+        final insertResult = await pool.execute(
+          '''
+          INSERT INTO closet (user_id, clothing_type, color, material, style, description, img_link, public)
+          VALUES (:user_id, :type, :color, :material, :style, :description, :img_link, :public)
+          ''',
+          {
+            'user_id': itemData['user_id'],
+            'type': itemData['type'],
+            'color': itemData['color'],
+            'material': itemData['material'],
+            'style': itemData['style'],
+            'description': itemData['description'],
+            'img_link': savedFilename,
+            'public': (itemData['public'] == 'true') ? 1 : 0,
+          },
+        );
+        
+        final newId = insertResult.lastInsertID;
+
+        final newItemResult = await pool.execute(
+            'SELECT id, img_link, clothing_type, material, color, style, description FROM closet WHERE id = :id',
+            {'id': newId}
+        );
+
+        if (newItemResult.rows.isEmpty) {
+            throw Exception('Failed to fetch newly created item.');
+        }
+
+        final row = newItemResult.rows.first;
+        final imgLink = row.colByName('img_link');
+        final imagePath = (imgLink != null) ? 'http://10.0.2.2:8080/images/$imgLink' : '';
+        
+        final newItemJson = {
+          'id': row.colByName('id').toString(),
+          'imagePath': imagePath,
+          'type': row.colByName('clothing_type'),
+          'material': row.colByName('material'),
+          'color': row.colByName('color'),
+          'style': row.colByName('style'),
+          'description': row.colByName('description'),
+        };
+
+        request.response
+          ..statusCode = HttpStatus.created
+          ..headers.contentType = ContentType.json
+          ..write(jsonEncode(newItemJson))
+          ..close();
+
+      } catch (e) {
+        print('Error during upload: $e');
+        request.response
+          ..statusCode = HttpStatus.internalServerError
+          ..write('Error during upload: $e')
+          ..close();
+      }
+    } else if (request.method == 'GET' && request.uri.path == '/friends') {
+      final userId = request.uri.queryParameters['user_id'];
+      if (userId == null) {
+        request.response
+          ..statusCode = HttpStatus.badRequest
+          ..write('Missing user_id query parameter')
+          ..close();
+        continue;
+      }
+
+      try {
+        // 1. Get all accepted friend IDs
+        final friendIdsResult = await pool.execute(
+          'SELECT friend_id FROM friendships WHERE user_id = :user_id AND status = \'accepted\'',
+          {'user_id': userId},
+        );
+
+        if (friendIdsResult.rows.isEmpty) {
+          request.response
+            ..statusCode = HttpStatus.ok
+            ..headers.contentType = ContentType.json
+            ..write(jsonEncode([]))
+            ..close();
+          continue;
+        }
+
+        final friendIds = friendIdsResult.rows.map((row) => row.colByName('friend_id')).toList();
+
+        if (friendIds.isEmpty) {
+          request.response
+            ..statusCode = HttpStatus.ok
+            ..headers.contentType = ContentType.json
+            ..write(jsonEncode([]))
+            ..close();
+          continue;
+        }
+
+        // 2. Get friend details from users table
+        final friendsResult = await pool.execute(
+          'SELECT id, username FROM users WHERE id IN (${friendIds.join(',')})',
+        );
+
+        // 3. Get all public clothing items for all friends
+        final itemsResult = await pool.execute(
+          'SELECT id, user_id, img_link, clothing_type, material, color, style, description FROM closet WHERE user_id IN (${friendIds.join(',')}) AND public = TRUE',
+        );
+
+        // 4. Group items by friend
+        final Map<String, List<Map<String, dynamic>>> itemsByFriendId = {};
+        for (final row in itemsResult.rows) {
+          final friendId = row.colByName('user_id').toString();
+          final imgLink = row.colByName('img_link');
+          final imagePath = (imgLink != null) ? 'http://10.0.2.2:8080/images/$imgLink' : '';
+
+          final item = {
+            'id': row.colByName('id').toString(),
+            'imagePath': imagePath,
+            'type': row.colByName('clothing_type'),
+            'material': row.colByName('material'),
+            'color': row.colByName('color'),
+            'style': row.colByName('style'),
+            'description': row.colByName('description'),
+          };
+
+          if (!itemsByFriendId.containsKey(friendId)) {
+            itemsByFriendId[friendId] = [];
+          }
+          itemsByFriendId[friendId]!.add(item);
+        }
+
+        // 5. Construct final JSON
+        final friendsJson = friendsResult.rows.map((row) {
+          final friendId = row.colByName('id').toString();
+          final allItems = itemsByFriendId[friendId] ?? [];
+          final previewItems = allItems.take(4).toList();
+
+          return {
+            'id': friendId,
+            'name': row.colByName('username'),
+            'previewItems': previewItems,
+            'closetItems': allItems,
+          };
+        }).toList();
+
+        request.response
+          ..statusCode = HttpStatus.ok
+          ..headers.contentType = ContentType.json
+          ..write(jsonEncode(friendsJson))
+          ..close();
+
+      } catch (e) {
+        print('Error fetching friends: $e');
+        request.response
+          ..statusCode = HttpStatus.internalServerError
+          ..write('Error fetching friends: $e')
+          ..close();
+      }
+    } else if (request.method == 'GET' && request.uri.path == '/outfits') {
+      final userId = request.uri.queryParameters['user_id'];
+      if (userId == null) {
+        request.response
+          ..statusCode = HttpStatus.badRequest
+          ..write('Missing user_id query parameter')
+          ..close();
+        continue;
+      }
+
+      try {
+        // 1. Get all outfits for the user
+        final outfitsResult = await pool.execute(
+          'SELECT id, outfit_name, description, created_at FROM outfits WHERE user_id = :user_id',
+          {'user_id': userId},
+        );
+
+        if (outfitsResult.rows.isEmpty) {
+          request.response
+            ..statusCode = HttpStatus.ok
+            ..headers.contentType = ContentType.json
+            ..write(jsonEncode([]))
+            ..close();
+          continue;
+        }
+
+        final outfitIds = outfitsResult.rows.map((row) => row.colByName('id')).toList();
+
+        // 2. Get all clothing items for those outfits in one query
+        final itemsResult = await pool.execute(
+          '''
+          SELECT
+              oi.outfit_id,
+              c.id, c.img_link, clothing_type, c.material, c.color, c.style, c.description
+          FROM outfit_items oi
+          JOIN closet c ON oi.clothing_item_id = c.id
+          WHERE oi.outfit_id IN (${outfitIds.join(',')})
+          ''',
+        );
+
+        // 3. Group clothing items by outfit_id
+        final Map<String, List<Map<String, dynamic>>> itemsByOutfitId = {};
+        for (final row in itemsResult.rows) {
+          final outfitId = row.colByName('outfit_id').toString();
+          final imgLink = row.colByName('img_link');
+          final imagePath = (imgLink != null) ? 'http://10.0.2.2:8080/images/$imgLink' : '';
+
+          final item = {
+            'id': row.colByName('id').toString(),
+            'imagePath': imagePath,
+            'type': row.colByName('clothing_type'),
+            'material': row.colByName('material'),
+            'color': row.colByName('color'),
+            'style': row.colByName('style'),
+            'description': row.colByName('description'),
+          };
+
+          if (!itemsByOutfitId.containsKey(outfitId)) {
+            itemsByOutfitId[outfitId] = [];
+          }
+          itemsByOutfitId[outfitId]!.add(item);
+        }
+
+        // 4. Construct the final JSON response
+        final outfitsJson = outfitsResult.rows.map((row) {
+          final outfitId = row.colByName('id').toString();
+          return {
+            'id': outfitId,
+            'name': row.colByName('outfit_name'),
+            'savedDate': (row.colByName('created_at') as DateTime).toIso8601String(),
+            'items': itemsByOutfitId[outfitId] ?? [],
+          };
+        }).toList();
+
+        request.response
+          ..statusCode = HttpStatus.ok
+          ..headers.contentType = ContentType.json
+          ..write(jsonEncode(outfitsJson))
+          ..close();
+
+      } catch (e) {
+        print('Error fetching outfits: $e');
+        request.response
+          ..statusCode = HttpStatus.internalServerError
+          ..write('Error fetching outfits: $e')
+          ..close();
+      }
+    } else if (request.method == 'GET' && request.uri.path == '/closet') {
+      final userId = request.uri.queryParameters['user_id'];
+      if (userId == null) {
+        request.response
+          ..statusCode = HttpStatus.badRequest
+          ..write('Missing user_id query parameter')
+          ..close();
+        continue;
+      }
+
+      try {
+        final results = await pool.execute(
+          'SELECT id, img_link, clothing_type, material, color, style, description FROM closet WHERE user_id = :user_id',
+          {'user_id': userId},
+        );
+
+        final items = results.rows.map((row) {
+          final imgLink = row.colByName('img_link');
+          final imagePath = (imgLink != null) ? 'http://10.0.2.2:8080/images/$imgLink' : '';
+          
+          return {
+            'id': row.colByName('id').toString(),
+            'imagePath': imagePath,
+            'type': row.colByName('clothing_type'),
+            'material': row.colByName('material'),
+            'color': row.colByName('color'),
+            'style': row.colByName('style'),
+            'description': row.colByName('description'),
+          };
+        }).toList();
+
+        request.response
+          ..statusCode = HttpStatus.ok
+          ..headers.contentType = ContentType.json
+          ..write(jsonEncode(items))
+          ..close();
+      } catch (e) {
+        print('Error fetching closet items: $e');
+        request.response
+          ..statusCode = HttpStatus.internalServerError
+          ..write('Error fetching closet items: $e')
+          ..close();
+      }
     } else {
       request.response
         ..statusCode = HttpStatus.notFound

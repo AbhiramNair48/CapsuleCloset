@@ -29,6 +29,23 @@ class Friend {
     );
   }
 
+  factory Friend.fromJson(Map<String, dynamic> json) {
+    var previewList = json['previewItems'] as List;
+    List<ClothingItem> previewItems =
+        previewList.map((i) => ClothingItem.fromJson(i)).toList();
+
+    var closetList = json['closetItems'] as List;
+    List<ClothingItem> closetItems =
+        closetList.map((i) => ClothingItem.fromJson(i)).toList();
+
+    return Friend(
+      id: json['id'],
+      name: json['name'],
+      previewItems: previewItems,
+      closetItems: closetItems,
+    );
+  }
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
