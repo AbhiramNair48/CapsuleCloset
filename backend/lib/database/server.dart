@@ -8,9 +8,6 @@ import 'package:mime/mime.dart';
 
 //TODO: move response closes to the end 
 Future<void> main() async {
-  print('Server starting...');
-  print('Current working directory: ${Directory.current.path}');
-
   var env = DotEnv(includePlatformEnvironment: true);
   if (File('backend/.env').existsSync()) {
     env.load(['backend/.env']);
@@ -280,7 +277,6 @@ Future<void> main() async {
       if (await file.exists()) {
         final contentType = lookupMimeType(filename) ?? 'application/octet-stream';
         request.response.headers.contentType = ContentType.parse(contentType);
-        print('Serving image $filename with Content-Type: $contentType');
         try {
           await request.response.addStream(file.openRead());
           await request.response.close();
@@ -322,7 +318,6 @@ Future<void> main() async {
             
             final filePath = 'assets/images/clothes/$savedFilename';
             final file = File(filePath);
-            print('Attempting to save image to absolute path: ${file.absolute.path}');
             await file.create(recursive: true);
             await part.pipe(file.openWrite());
           } else {
@@ -489,6 +484,96 @@ Future<void> main() async {
           ..write('Error deleting clothing item: $e')
           ..close();
       }
+    } else if (request.method == 'PATCH' && request.uri.path.startsWith('/friends/request/')) {
+      try {
+        final pathSegments = request.uri.pathSegments;
+        final friendshipIdString = pathSegments.last; // e.g., "senderId_receiverId"
+
+        final ids = friendshipIdString.split('_');
+        if (ids.length != 2) {
+          request.response
+            ..statusCode = HttpStatus.badRequest
+            ..write('Invalid friendshipId format. Expected "senderId_receiverId".')
+            ..close();
+          continue;
+        }
+        final senderId = ids[0];
+        final receiverId = ids[1];
+        
+        final content = await utf8.decoder.bind(request).join();
+        final data = jsonDecode(content) as Map<String, dynamic>;
+        final status = data['status'] as String;
+
+        if (!['accepted', 'rejected'].contains(status)) {
+          request.response
+            ..statusCode = HttpStatus.badRequest
+            ..write('Invalid status provided. Must be "accepted" or "rejected".')
+            ..close();
+          continue;
+        }
+
+        await pool.execute(
+          'UPDATE friendships SET status = :status WHERE user_id = :sender_id AND friend_id = :receiver_id',
+          {'status': status, 'sender_id': senderId, 'receiver_id': receiverId},
+        );
+
+        request.response
+          ..statusCode = HttpStatus.ok
+          ..write('Friend request status updated successfully')
+          ..close();
+
+      } catch (e) {
+        print('Error updating friend request status: $e');
+        request.response
+          ..statusCode = HttpStatus.internalServerError
+          ..write('Error updating friend request status: $e')
+          ..close();
+      }
+    } else if (request.method == 'GET' && request.uri.path == '/friends/pending') {
+      final userId = request.uri.queryParameters['user_id'];
+      if (userId == null) {
+        request.response
+          ..statusCode = HttpStatus.badRequest
+          ..write('Missing user_id query parameter')
+          ..close();
+        continue;
+      }
+
+      try {
+        final results = await pool.execute(
+          '''
+          SELECT 
+              f.user_id as sender_id, 
+              u.username as sender_username, 
+              u.email as sender_email,
+              f.friend_id as receiver_id
+          FROM friendships f
+          JOIN users u ON f.user_id = u.id
+          WHERE f.friend_id = :user_id AND f.status = 'pending'
+          ''',
+          {'user_id': userId},
+        );
+
+        final pendingRequests = results.rows.map((row) => {
+          'friendshipId': '${row.colByName('sender_id')}_${row.colByName('receiver_id')}', // Construct a unique ID for the friendship
+          'senderId': row.colByName('sender_id').toString(),
+          'senderUsername': row.colByName('sender_username'),
+          'senderEmail': row.colByName('sender_email'),
+        }).toList();
+
+        request.response
+          ..statusCode = HttpStatus.ok
+          ..headers.contentType = ContentType.json
+          ..write(jsonEncode(pendingRequests))
+          ..close();
+
+      } catch (e) {
+        print('Error fetching pending friend requests: $e');
+        request.response
+          ..statusCode = HttpStatus.internalServerError
+          ..write('Error fetching pending friend requests: $e')
+          ..close();
+      }
     } else if (request.method == 'GET' && request.uri.path == '/friends') {
       final userId = request.uri.queryParameters['user_id'];
       if (userId == null) {
@@ -500,13 +585,13 @@ Future<void> main() async {
       }
 
       try {
-        // 1. Get all accepted friend IDs
-        final friendIdsResult = await pool.execute(
-          'SELECT friend_id FROM friendships WHERE user_id = :user_id AND status = \'accepted\'',
+        // 1. Get all accepted friend IDs (bidirectional)
+        final rawFriendships = await pool.execute(
+          'SELECT user_id, friend_id FROM friendships WHERE (user_id = :user_id OR friend_id = :user_id) AND status = \'accepted\'',
           {'user_id': userId},
         );
 
-        if (friendIdsResult.rows.isEmpty) {
+        if (rawFriendships.rows.isEmpty) {
           request.response
             ..statusCode = HttpStatus.ok
             ..headers.contentType = ContentType.json
@@ -515,7 +600,16 @@ Future<void> main() async {
           continue;
         }
 
-        final friendIds = friendIdsResult.rows.map((row) => row.colByName('friend_id')).toList();
+        final Set<String> friendIds = {};
+        for (final row in rawFriendships.rows) {
+          final uId = row.colByName('user_id').toString();
+          final fId = row.colByName('friend_id').toString();
+          if (uId == userId) {
+            friendIds.add(fId);
+          } else {
+            friendIds.add(uId);
+          }
+        }
 
         if (friendIds.isEmpty) {
           request.response
