@@ -258,6 +258,103 @@ Future<void> main() async {
           ..write('Error Logging In: $e')
           ..close();
       }
+    } else if (request.method == 'GET' && request.uri.path == '/friends') {
+      final userId = request.uri.queryParameters['user_id'];
+      if (userId == null) {
+        request.response
+          ..statusCode = HttpStatus.badRequest
+          ..write('Missing user_id query parameter')
+          ..close();
+        continue;
+      }
+
+      try {
+        // 1. Get all accepted friend IDs
+        final friendIdsResult = await pool.execute(
+          'SELECT friend_id FROM friendships WHERE user_id = :user_id AND status = \'accepted\'',
+          {'user_id': userId},
+        );
+
+        if (friendIdsResult.rows.isEmpty) {
+          request.response
+            ..statusCode = HttpStatus.ok
+            ..headers.contentType = ContentType.json
+            ..write(jsonEncode([]))
+            ..close();
+          continue;
+        }
+
+        final friendIds = friendIdsResult.rows.map((row) => row.colByName('friend_id')).toList();
+
+        if (friendIds.isEmpty) {
+          request.response
+            ..statusCode = HttpStatus.ok
+            ..headers.contentType = ContentType.json
+            ..write(jsonEncode([]))
+            ..close();
+          continue;
+        }
+
+        // 2. Get friend details from users table
+        final friendsResult = await pool.execute(
+          'SELECT id, username FROM users WHERE id IN (${friendIds.join(',')})',
+        );
+
+        // 3. Get all public clothing items for all friends
+        final itemsResult = await pool.execute(
+          'SELECT id, user_id, img_link, type, material, color, style, description FROM closet WHERE user_id IN (${friendIds.join(',')}) AND public = TRUE',
+        );
+
+        // 4. Group items by friend
+        final Map<String, List<Map<String, dynamic>>> itemsByFriendId = {};
+        for (final row in itemsResult.rows) {
+          final friendId = row.colByName('user_id').toString();
+          final imgLink = row.colByName('img_link');
+          final imagePath = (imgLink != null) ? 'assets/images/clothes/$imgLink' : '';
+
+          final item = {
+            'id': row.colByName('id').toString(),
+            'imagePath': imagePath,
+            'type': row.colByName('type'),
+            'material': row.colByName('material'),
+            'color': row.colByName('color'),
+            'style': row.colByName('style'),
+            'description': row.colByName('description'),
+          };
+
+          if (!itemsByFriendId.containsKey(friendId)) {
+            itemsByFriendId[friendId] = [];
+          }
+          itemsByFriendId[friendId]!.add(item);
+        }
+
+        // 5. Construct final JSON
+        final friendsJson = friendsResult.rows.map((row) {
+          final friendId = row.colByName('id').toString();
+          final allItems = itemsByFriendId[friendId] ?? [];
+          final previewItems = allItems.take(4).toList();
+
+          return {
+            'id': friendId,
+            'name': row.colByName('username'),
+            'previewItems': previewItems,
+            'closetItems': allItems,
+          };
+        }).toList();
+
+        request.response
+          ..statusCode = HttpStatus.ok
+          ..headers.contentType = ContentType.json
+          ..write(jsonEncode(friendsJson))
+          ..close();
+
+      } catch (e) {
+        print('Error fetching friends: $e');
+        request.response
+          ..statusCode = HttpStatus.internalServerError
+          ..write('Error fetching friends: $e')
+          ..close();
+      }
     } else if (request.method == 'GET' && request.uri.path == '/outfits') {
       final userId = request.uri.queryParameters['user_id'];
       if (userId == null) {
