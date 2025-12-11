@@ -8,6 +8,7 @@ import '../models/outfit.dart';
 import '../models/friend.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/user_profile.dart';
+import '../models/pending_friend_request.dart';
 
 /// Service class to manage all application data
 class DataService extends ChangeNotifier {
@@ -17,12 +18,14 @@ class DataService extends ChangeNotifier {
   List<Outfit> _outfits = [];
   List<Friend> _friends = [];
   List<ClothingItem> _filteredClothingItems = [];
+  List<PendingFriendRequest> _pendingFriendRequests = [];
   UserProfile _userProfile = const UserProfile();
 
   List<ClothingItem> get clothingItems => _clothingItems;
   List<Outfit> get outfits => _outfits;
   List<Friend> get friends => _friends;
   List<ClothingItem> get filteredClothingItems => _filteredClothingItems;
+  List<PendingFriendRequest> get pendingFriendRequests => _pendingFriendRequests;
   UserProfile get userProfile => _userProfile;
 
   DataService(this._authService) {
@@ -42,6 +45,7 @@ class DataService extends ChangeNotifier {
       fetchClothingItems(userId.toString());
       fetchOutfits(userId.toString());
       fetchFriends(userId.toString());
+      fetchPendingFriendRequests(userId.toString());
     } else {
       _clearData();
     }
@@ -55,6 +59,7 @@ class DataService extends ChangeNotifier {
       fetchClothingItems(userId.toString());
       fetchOutfits(userId.toString());
       fetchFriends(userId.toString());
+      fetchPendingFriendRequests(userId.toString());
     }
   }
   
@@ -118,6 +123,9 @@ class DataService extends ChangeNotifier {
       if (response.statusCode == 200) {
         final List<dynamic> itemsJson = jsonDecode(response.body);
         _friends = itemsJson.map((json) => Friend.fromJson(json)).toList();
+        if (kDebugMode) {
+          print('Fetched ${_friends.length} friends from backend.');
+        }
       } else {
         if (kDebugMode) {
           print('Failed to load friends: ${response.statusCode}');
@@ -131,6 +139,114 @@ class DataService extends ChangeNotifier {
       _friends = [];
     }
     notifyListeners();
+  }
+
+  /// Fetches pending friend requests for the given user from the backend
+  Future<void> fetchPendingFriendRequests(String userId) async {
+    try {
+      final url = Uri.parse('${AppConstants.baseUrl}/friends/pending?user_id=$userId');
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> itemsJson = jsonDecode(response.body);
+        _pendingFriendRequests = itemsJson.map((json) => PendingFriendRequest.fromJson(json)).toList();
+      } else {
+        if (kDebugMode) {
+          print('Failed to load pending friend requests: ${response.statusCode}');
+        }
+        _pendingFriendRequests = [];
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error fetching pending friend requests: $e');
+      }
+      _pendingFriendRequests = [];
+    }
+    notifyListeners();
+  }
+
+  /// Searches for users by username
+  Future<List<Map<String, dynamic>>> searchUsers(String query) async {
+    try {
+      final url = Uri.parse('${AppConstants.baseUrl}/users/search?q=$query');
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> usersJson = jsonDecode(response.body);
+        return usersJson.cast<Map<String, dynamic>>();
+      } else {
+        if (kDebugMode) {
+          print('Failed to search users: ${response.statusCode}');
+        }
+        return [];
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error searching users: $e');
+      }
+      return [];
+    }
+  }
+
+  /// Sends a friend request
+  Future<bool> sendFriendRequest(String senderUserEmail, String recipientId) async {
+    try {
+      final url = Uri.parse('${AppConstants.baseUrl}/friends/request');
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'user_email': senderUserEmail, // this is the sender's email
+          'friend_id': recipientId, // this is the recipient's id
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return true;
+      } else {
+        if (kDebugMode) {
+          print('Failed to send friend request: ${response.statusCode} - ${response.body}');
+        }
+        return false;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error sending friend request: $e');
+      }
+      return false;
+    }
+  }
+
+  /// Responds to a friend request (accept/reject)
+  Future<bool> respondToFriendRequest(String friendshipId, String status) async {
+    try {
+      final url = Uri.parse('${AppConstants.baseUrl}/friends/request/$friendshipId');
+      final response = await http.patch(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'status': status}),
+      );
+
+      if (response.statusCode == 200) {
+        // After accepting/rejecting, refresh pending requests and accepted friends
+        final userId = _authService?.currentUser?['id']?.toString();
+        if (userId != null) {
+          fetchPendingFriendRequests(userId);
+          fetchFriends(userId); // Re-fetch accepted friends to update UI
+        }
+        return true;
+      } else {
+        if (kDebugMode) {
+          print('Failed to respond to friend request: ${response.statusCode} - ${response.body}');
+        }
+        return false;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error responding to friend request: $e');
+      }
+      return false;
+    }
   }
 
   /// Uploads a new clothing item to the backend
@@ -215,6 +331,7 @@ class DataService extends ChangeNotifier {
     _filteredClothingItems = [];
     _outfits = [];
     _friends = [];
+    _pendingFriendRequests = [];
     notifyListeners();
   }
 

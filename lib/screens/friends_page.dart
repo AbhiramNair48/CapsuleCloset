@@ -4,6 +4,8 @@ import '../services/data_service.dart';
 import 'friend_closet_page.dart';
 import 'delete_friends_screen.dart';
 import '../widgets/friend_card.dart';
+import 'find_friends_screen.dart';
+import 'friend_requests_screen.dart';
 
 // Search bar widget for the friends page
 class _FriendSearchBar extends StatelessWidget {
@@ -33,6 +35,30 @@ class FriendsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        title: const Text('Friends'),
+        backgroundColor: Colors.transparent,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person_add),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const FindFriendsScreen()),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.group),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const FriendRequestsScreen()),
+              );
+            },
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(
