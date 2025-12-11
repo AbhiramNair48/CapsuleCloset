@@ -7,7 +7,6 @@ import '../models/clothing_item.dart';
 import '../models/outfit.dart';
 import '../models/friend.dart';
 import '../models/user_profile.dart';
-import '../data/mock_outfit_data.dart';
 import '../data/mock_friends_data.dart';
 
 /// Service class to manage all application data
@@ -41,19 +40,20 @@ class DataService extends ChangeNotifier {
     if (_authService?.isAuthenticated == true && _authService?.currentUser != null) {
       final userId = _authService!.currentUser!['id'];
       fetchClothingItems(userId.toString());
+      fetchOutfits(userId.toString());
     } else {
       _clearData();
     }
   }
 
-  /// Initialize data from mock sources for outfits and friends. Clothing is fetched from backend.
+  /// Initialize data. Clothing and outfits are fetched from the backend.
   void _initializeData() {
-    _outfits = MockOutfitData.getOutfits();
     _friends = List.from(mockFriends);
     // Check if user is already authenticated on startup
     if (_authService?.isAuthenticated == true && _authService?.currentUser != null) {
       final userId = _authService!.currentUser!['id'];
       fetchClothingItems(userId.toString());
+      fetchOutfits(userId.toString());
     }
   }
   
@@ -83,10 +83,35 @@ class DataService extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  /// Fetches outfits for the given user from the backend
+  Future<void> fetchOutfits(String userId) async {
+    try {
+      final url = Uri.parse('${AppConstants.baseUrl}/outfits?user_id=$userId');
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> itemsJson = jsonDecode(response.body);
+        _outfits = itemsJson.map((json) => Outfit.fromJson(json)).toList();
+      } else {
+        if (kDebugMode) {
+          print('Failed to load outfits: ${response.statusCode}');
+        }
+        _outfits = [];
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error fetching outfits: $e');
+      }
+      _outfits = [];
+    }
+    notifyListeners();
+  }
   
   void _clearData() {
     _clothingItems = [];
     _filteredClothingItems = [];
+    _outfits = [];
     notifyListeners();
   }
 

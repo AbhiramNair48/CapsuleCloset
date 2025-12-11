@@ -258,6 +258,93 @@ Future<void> main() async {
           ..write('Error Logging In: $e')
           ..close();
       }
+    } else if (request.method == 'GET' && request.uri.path == '/outfits') {
+      final userId = request.uri.queryParameters['user_id'];
+      if (userId == null) {
+        request.response
+          ..statusCode = HttpStatus.badRequest
+          ..write('Missing user_id query parameter')
+          ..close();
+        continue;
+      }
+
+      try {
+        // 1. Get all outfits for the user
+        final outfitsResult = await pool.execute(
+          'SELECT id, outfit_name, description, created_at FROM outfits WHERE user_id = :user_id',
+          {'user_id': userId},
+        );
+
+        if (outfitsResult.rows.isEmpty) {
+          request.response
+            ..statusCode = HttpStatus.ok
+            ..headers.contentType = ContentType.json
+            ..write(jsonEncode([]))
+            ..close();
+          continue;
+        }
+
+        final outfitIds = outfitsResult.rows.map((row) => row.colByName('id')).toList();
+
+        // 2. Get all clothing items for those outfits in one query
+        final itemsResult = await pool.execute(
+          '''
+          SELECT
+              oi.outfit_id,
+              c.id, c.img_link, c.type, c.material, c.color, c.style, c.description
+          FROM outfit_items oi
+          JOIN closet c ON oi.clothing_item_id = c.id
+          WHERE oi.outfit_id IN (${outfitIds.join(',')})
+          ''',
+        );
+
+        // 3. Group clothing items by outfit_id
+        final Map<String, List<Map<String, dynamic>>> itemsByOutfitId = {};
+        for (final row in itemsResult.rows) {
+          final outfitId = row.colByName('outfit_id').toString();
+          final imgLink = row.colByName('img_link');
+          final imagePath = (imgLink != null) ? 'assets/images/clothes/$imgLink' : '';
+
+          final item = {
+            'id': row.colByName('id').toString(),
+            'imagePath': imagePath,
+            'type': row.colByName('type'),
+            'material': row.colByName('material'),
+            'color': row.colByName('color'),
+            'style': row.colByName('style'),
+            'description': row.colByName('description'),
+          };
+
+          if (!itemsByOutfitId.containsKey(outfitId)) {
+            itemsByOutfitId[outfitId] = [];
+          }
+          itemsByOutfitId[outfitId]!.add(item);
+        }
+
+        // 4. Construct the final JSON response
+        final outfitsJson = outfitsResult.rows.map((row) {
+          final outfitId = row.colByName('id').toString();
+          return {
+            'id': outfitId,
+            'name': row.colByName('outfit_name'),
+            'savedDate': (row.colByName('created_at') as DateTime).toIso8601String(),
+            'items': itemsByOutfitId[outfitId] ?? [],
+          };
+        }).toList();
+
+        request.response
+          ..statusCode = HttpStatus.ok
+          ..headers.contentType = ContentType.json
+          ..write(jsonEncode(outfitsJson))
+          ..close();
+
+      } catch (e) {
+        print('Error fetching outfits: $e');
+        request.response
+          ..statusCode = HttpStatus.internalServerError
+          ..write('Error fetching outfits: $e')
+          ..close();
+      }
     } else if (request.method == 'GET' && request.uri.path == '/closet') {
       final userId = request.uri.queryParameters['user_id'];
       if (userId == null) {

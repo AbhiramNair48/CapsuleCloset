@@ -13,6 +13,7 @@ CREATE TABLE users(
 
 -- Create the closet table
 CREATE TABLE closet(
+    id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     clothing_type VARCHAR(100),
     color VARCHAR(100),
@@ -37,3 +38,20 @@ CREATE TABLE friendships (
     FOREIGN KEY (friend_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+CREATE TABLE outfits (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    outfit_name VARCHAR(100),
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Junction table to link outfits with clothing items
+CREATE TABLE outfit_items (
+    outfit_id INT NOT NULL,
+    clothing_item_id INT NOT NULL,
+    PRIMARY KEY (outfit_id, clothing_item_id),
+    FOREIGN KEY (outfit_id) REFERENCES outfits(id) ON DELETE CASCADE,
+    FOREIGN KEY (clothing_item_id) REFERENCES closet(id) ON DELETE CASCADE
+);

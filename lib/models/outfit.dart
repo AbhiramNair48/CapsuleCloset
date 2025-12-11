@@ -26,6 +26,19 @@ class Outfit {
     );
   }
 
+  factory Outfit.fromJson(Map<String, dynamic> json) {
+    var itemsList = json['items'] as List;
+    List<ClothingItem> items =
+        itemsList.map((i) => ClothingItem.fromJson(i)).toList();
+
+    return Outfit(
+      id: json['id'],
+      name: json['name'],
+      items: items,
+      savedDate: DateTime.parse(json['savedDate']),
+    );
+  }
+
   @override
   bool operator ==(Object other) {
     if (identical(this, other)) return true;
