@@ -36,6 +36,12 @@ class MockAIService extends ChangeNotifier implements AIService {
     return (cleanText: text, imagePaths: <String>[], itemIds: <String>[]);
   }
 
+  @override
+  void resetChat() {
+    _messages.clear();
+    notifyListeners();
+  }
+
   void addBotMessage(String text, {List<String>? imagePaths, List<String>? itemIds}) {
     _messages.add(Message(text: text, isUser: false, imagePaths: imagePaths, itemIds: itemIds));
     notifyListeners();

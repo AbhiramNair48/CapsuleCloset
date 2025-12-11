@@ -195,7 +195,15 @@ class AIService extends ChangeNotifier {
 
     // 3. Clean tags from the ENTIRE text
     String cleanText = text.replaceAll(idRegex, '');
-    
+
     return (cleanText: cleanText, imagePaths: paths, itemIds: ids);
+  }
+
+  /// Resets the chat by clearing messages and starting a new session
+  void resetChat() {
+    _messages.clear();
+    _chatSession = null;
+    _lastSystemPrompt = null;
+    notifyListeners();
   }
 }
