@@ -45,23 +45,48 @@ class AuthService extends ChangeNotifier {
   /// Simulates a login attempt with network delay.
   /// Returns true if credentials match, false otherwise.
   Future<bool> login(String email, String password) async {
+    
     _setLoading(true);
     await Future.delayed(_networkDelay);
+      
+      try {
+      final url = Uri.parse('${AppConstants.baseUrl}/login');
+      
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+        }),
+      );
 
-    final isValid = _validUsers.any(
-      (user) => user['email'] == email && user['password'] == password,
-    );
-
-    if (isValid) {
-      _currentUserEmail = email;
-      _isAuthenticated = true;
-    } else {
-      _currentUserEmail = null;
+      _setLoading(false);
+      if (response.statusCode == 200) {
+        // Logic for successs
+        _currentUserEmail = email;
+        _isAuthenticated = true;
+        return true;
+      } else {
+        if (kDebugMode) {
+          print('Login failed: ${response.statusCode} - ${response.body}');
+        }
+        _currentUserEmail = null;
+        _isAuthenticated = false;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Login error: $e');
+      }
+       _currentUserEmail = null;
       _isAuthenticated = false;
+      _setLoading(false);
     }
+      
 
     _setLoading(false);
     notifyListeners();
+    
     return _isAuthenticated;
   }
 
@@ -89,13 +114,9 @@ class AuthService extends ChangeNotifier {
           'favorite_style': favoriteStyle,
         }),
       );
-
       _setLoading(false);
 
       if (response.statusCode == 200) {
-        // Automatically log in the user or just return success?
-        // For now, let's just return success and let the UI navigate to login or home.
-        // If we want auto-login, we would set _currentUserEmail and _isAuthenticated here.
         return true;
       } else {
         if (kDebugMode) {
@@ -116,7 +137,7 @@ class AuthService extends ChangeNotifier {
   void logout() {
     _currentUserEmail = null;
     _isAuthenticated = false;
-    _dataService?.logout();
+    // _dataService?.logout();
     notifyListeners();
   }
 

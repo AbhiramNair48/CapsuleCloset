@@ -200,6 +200,7 @@ Future<void> main() async {
        // TODO: Implement login
        request.response
          ..statusCode = HttpStatus.notImplemented
+         ..write('Not Implemented')
          ..close();
     } else {
       request.response
