@@ -8,6 +8,7 @@ class ClothingItem {
   final String style;
   final String description;
   final bool isEditable;
+  final bool isPublic;
 
   const ClothingItem({
     required this.id,
@@ -18,6 +19,7 @@ class ClothingItem {
     required this.style,
     required this.description,
     this.isEditable = true,
+    this.isPublic = false,
   });
 
   /// Creates a copy of this clothing item with updated fields
@@ -30,6 +32,7 @@ class ClothingItem {
     String? style,
     String? description,
     bool? isEditable,
+    bool? isPublic,
   }) {
     return ClothingItem(
       id: id ?? this.id,
@@ -40,6 +43,7 @@ class ClothingItem {
       style: style ?? this.style,
       description: description ?? this.description,
       isEditable: isEditable ?? this.isEditable,
+      isPublic: isPublic ?? this.isPublic,
     );
   }
 
@@ -53,6 +57,7 @@ class ClothingItem {
       'color': color,
       'style': style,
       'description': description,
+      'isPublic': isPublic,
     };
   }
 
@@ -66,6 +71,7 @@ class ClothingItem {
       color: json['color'] as String,
       style: json['style'] as String,
       description: json['description'] as String,
+      isPublic: json['public'] ?? false,
     );
   }
 
@@ -80,7 +86,8 @@ class ClothingItem {
         color == other.color &&
         style == other.style &&
         description == other.description &&
-        isEditable == other.isEditable;
+        isEditable == other.isEditable &&
+        isPublic == other.isPublic;
   }
 
   @override
@@ -94,6 +101,7 @@ class ClothingItem {
       style,
       description,
       isEditable,
+      isPublic,
     );
   }
 }

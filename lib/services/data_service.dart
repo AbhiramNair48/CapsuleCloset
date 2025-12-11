@@ -180,6 +180,35 @@ class DataService extends ChangeNotifier {
       return null;
     }
   }
+
+  Future<void> updateClothingItemPublicStatus(String itemId, bool isPublic) async {
+    try {
+      final url = Uri.parse('${AppConstants.baseUrl}/closet/$itemId/public');
+      final response = await http.patch(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'public': isPublic}),
+      );
+
+      if (response.statusCode == 200) {
+        // Update local state
+        final index = _clothingItems.indexWhere((item) => item.id == itemId);
+        if (index != -1) {
+          _clothingItems[index] = _clothingItems[index].copyWith(isPublic: isPublic);
+          notifyListeners();
+        }
+      } else {
+        // Handle error, maybe show a snackbar or log it
+        if (kDebugMode) {
+          print('Failed to update public status: ${response.statusCode}');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error updating public status: $e');
+      }
+    }
+  }
   
   void _clearData() {
     _clothingItems = [];
@@ -203,19 +232,53 @@ class DataService extends ChangeNotifier {
   }
 
   /// Remove a clothing item by ID
-  void removeClothingItem(String id) {
-    _clothingItems.removeWhere((item) => item.id == id);
-    _filteredClothingItems = List.from(_clothingItems);
-    notifyListeners();
+  Future<void> removeClothingItem(String id) async {
+    try {
+      final url = Uri.parse('${AppConstants.baseUrl}/closet/$id');
+      final response = await http.delete(url);
+
+      if (response.statusCode == 200) {
+        _clothingItems.removeWhere((item) => item.id == id);
+        _filteredClothingItems = List.from(_clothingItems);
+        notifyListeners();
+      } else {
+        if (kDebugMode) {
+          print('Failed to delete clothing item: ${response.statusCode}');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error deleting clothing item: $e');
+      }
+    }
   }
 
   /// Update a clothing item
-  void updateClothingItem(ClothingItem updatedItem) {
-    final index = _clothingItems.indexWhere((item) => item.id == updatedItem.id);
-    if (index != -1) {
-      _clothingItems[index] = updatedItem;
-      _filteredClothingItems = List.from(_clothingItems);
-      notifyListeners();
+  Future<void> updateClothingItem(ClothingItem updatedItem) async {
+    try {
+      final url = Uri.parse('${AppConstants.baseUrl}/closet/${updatedItem.id}');
+      final response = await http.patch(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(updatedItem.toJson()), // Send all relevant fields
+      );
+
+      if (response.statusCode == 200) {
+        final index = _clothingItems.indexWhere((item) => item.id == updatedItem.id);
+        if (index != -1) {
+          _clothingItems[index] = updatedItem;
+          _filteredClothingItems = List.from(_clothingItems);
+          notifyListeners();
+        }
+      } else {
+        if (kDebugMode) {
+          print('Failed to update clothing item: ${response.statusCode}');
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error updating clothing item: $e');
+      }
     }
   }
 
