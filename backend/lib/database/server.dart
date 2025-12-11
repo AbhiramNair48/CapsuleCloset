@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:dotenv/dotenv.dart';
 
+
+//TODO: move response closes to the end 
 Future<void> main() async {
   var env = DotEnv(includePlatformEnvironment: true);
   if (File('backend/.env').existsSync()) {
@@ -196,12 +198,50 @@ Future<void> main() async {
             ..close();
         }
       }
+
+      // login
     } else if (request.method == 'POST' && request.uri.path == '/login') {
-       // TODO: Implement login
-       request.response
-         ..statusCode = HttpStatus.notImplemented
-         ..write('Not Implemented')
-         ..close();
+
+      final content = await utf8.decoder.bind(request).join();
+      final data = jsonDecode(content) as Map<String, dynamic>;
+
+      final email = data['email'];
+      final password = data['password'];
+
+      
+      try {
+        // Attempt Login 
+        final result = await pool.execute(
+          'SELECT id, email, password_hash FROM users WHERE email = :email LIMIT 1',
+          {
+            "email": email,
+
+          },
+        );
+
+        if (result.isEmpty){
+          request.response
+            ..statusCode = HttpStatus.unauthorized
+            ..write('Invalid Email')
+            ..close();
+        }else{
+          final row = result.first;
+          final dataHash = row['password_hash'];
+
+        }
+
+        request.response
+          ..statusCode = HttpStatus.ok
+          ..write('Successful login!')
+          ..close();
+
+      }catch (e){
+        request.response
+          ..statusCode = HttpStatus.unauthorized
+          ..write('Error Logging In: $e')
+          ..close();
+      }
+
     } else {
       request.response
         ..statusCode = HttpStatus.notFound
