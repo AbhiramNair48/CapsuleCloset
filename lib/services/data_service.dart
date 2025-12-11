@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import '../models/clothing_item.dart';
 import '../models/outfit.dart';
 import '../models/friend.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/user_profile.dart';
 
 /// Service class to manage all application data
@@ -130,6 +131,54 @@ class DataService extends ChangeNotifier {
       _friends = [];
     }
     notifyListeners();
+  }
+
+  /// Uploads a new clothing item to the backend
+  Future<ClothingItem?> uploadClothingItem({
+    required XFile imageFile,
+    required ClothingItem recognizedData,
+    required String userId,
+  }) async {
+    try {
+      final url = Uri.parse('${AppConstants.baseUrl}/closet/upload');
+      final request = http.MultipartRequest('POST', url);
+
+      // Add image file
+      request.files.add(await http.MultipartFile.fromPath('image', imageFile.path, filename: imageFile.name));
+
+      // Add data fields
+      request.fields['user_id'] = userId;
+      request.fields['type'] = recognizedData.type;
+      request.fields['color'] = recognizedData.color;
+      request.fields['material'] = recognizedData.material;
+      request.fields['style'] = recognizedData.style;
+      request.fields['description'] = recognizedData.description;
+      request.fields['public'] = 'false'; // Defaulting to false
+
+      final response = await request.send();
+
+      if (response.statusCode == 201) {
+        final responseBody = await response.stream.bytesToString();
+        final newItem = ClothingItem.fromJson(jsonDecode(responseBody));
+        
+        // Add the new item to the local state
+        addClothingItem(newItem); // This already calls notifyListeners()
+        
+        return newItem;
+      } else {
+        if (kDebugMode) {
+          print('Failed to upload item: ${response.statusCode}');
+          final responseBody = await response.stream.bytesToString();
+          print('Response body: $responseBody');
+        }
+        return null;
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error uploading item: $e');
+      }
+      return null;
+    }
   }
   
   void _clearData() {

@@ -3,10 +3,14 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:dotenv/dotenv.dart';
+import 'package:mime/mime.dart';
 
 
 //TODO: move response closes to the end 
 Future<void> main() async {
+  print('Server starting...');
+  print('Current working directory: ${Directory.current.path}');
+
   var env = DotEnv(includePlatformEnvironment: true);
   if (File('backend/.env').existsSync()) {
     env.load(['backend/.env']);
@@ -258,6 +262,138 @@ Future<void> main() async {
           ..write('Error Logging In: $e')
           ..close();
       }
+    } else if (request.method == 'GET' && request.uri.path.startsWith('/images/')) {
+      final filename = request.uri.pathSegments.last;
+
+      // Sanitize filename to prevent path traversal attacks
+      if (filename.contains('..') || filename.contains('/')) {
+        request.response
+          ..statusCode = HttpStatus.badRequest
+          ..write('Invalid filename')
+          ..close();
+        continue;
+      }
+
+      final filePath = '../assets/images/clothes/$filename';
+      final file = File(filePath);
+
+      if (await file.exists()) {
+        request.response.headers.contentType = ContentType.parse(lookupMimeType(filename) ?? 'application/octet-stream');
+        try {
+          await request.response.addStream(file.openRead());
+          await request.response.close();
+        } catch (e) {
+          print('Error serving file: $e');
+        }
+      } else {
+        request.response
+          ..statusCode = HttpStatus.notFound
+          ..write('Image not found')
+          ..close();
+      }
+    } else if (request.method == 'POST' && request.uri.path == '/closet/upload') {
+      final boundary = request.headers.contentType?.parameters['boundary'];
+      if (boundary == null) {
+        request.response
+          ..statusCode = HttpStatus.badRequest
+          ..write('Missing multipart boundary')
+          ..close();
+        continue;
+      }
+
+      try {
+        String? savedFilename;
+        final itemData = <String, String>{};
+        final transformer = MimeMultipartTransformer(boundary);
+        final stream = request.cast<List<int>>().transform(transformer);
+
+        await for (final part in stream) {
+          final contentDisposition = part.headers['content-disposition'];
+          final disposition = HeaderValue.parse(contentDisposition!);
+          final partName = disposition.parameters['name'];
+
+          if (partName == 'image') {
+            final originalFilename = disposition.parameters['filename'];
+            final timestamp = DateTime.now().millisecondsSinceEpoch;
+            final extension = originalFilename?.split('.').last ?? 'jpg';
+            savedFilename = '$timestamp.$extension';
+            
+            final filePath = 'assets/images/clothes/$savedFilename';
+            final file = File(filePath);
+            print('Attempting to save image to absolute path: ${file.absolute.path}');
+            await file.create(recursive: true);
+            await part.pipe(file.openWrite());
+          } else {
+            final value = await utf8.decodeStream(part);
+            if(partName != null) {
+              itemData[partName] = value;
+            }
+          }
+        }
+
+        if (savedFilename == null || itemData['user_id'] == null) {
+            request.response
+            ..statusCode = HttpStatus.badRequest
+            ..write('Missing image or user_id')
+            ..close();
+            continue;
+        }
+
+        final insertResult = await pool.execute(
+          '''
+          INSERT INTO closet (user_id, clothing_type, color, material, style, description, img_link, public)
+          VALUES (:user_id, :type, :color, :material, :style, :description, :img_link, :public)
+          ''',
+          {
+            'user_id': itemData['user_id'],
+            'type': itemData['type'],
+            'color': itemData['color'],
+            'material': itemData['material'],
+            'style': itemData['style'],
+            'description': itemData['description'],
+            'img_link': savedFilename,
+            'public': (itemData['public'] == 'true') ? 1 : 0,
+          },
+        );
+        
+        final newId = insertResult.lastInsertID;
+
+        final newItemResult = await pool.execute(
+            'SELECT id, img_link, clothing_type, material, color, style, description FROM closet WHERE id = :id',
+            {'id': newId}
+        );
+
+        if (newItemResult.rows.isEmpty) {
+            throw Exception('Failed to fetch newly created item.');
+        }
+
+        final row = newItemResult.rows.first;
+        final imgLink = row.colByName('img_link');
+        final imagePath = (imgLink != null) ? 'http://10.0.2.2:8080/images/$imgLink' : '';
+        
+        final newItemJson = {
+          'id': row.colByName('id').toString(),
+          'imagePath': imagePath,
+          'type': row.colByName('clothing_type'),
+          'material': row.colByName('material'),
+          'color': row.colByName('color'),
+          'style': row.colByName('style'),
+          'description': row.colByName('description'),
+        };
+
+        request.response
+          ..statusCode = HttpStatus.created
+          ..headers.contentType = ContentType.json
+          ..write(jsonEncode(newItemJson))
+          ..close();
+
+      } catch (e) {
+        print('Error during upload: $e');
+        request.response
+          ..statusCode = HttpStatus.internalServerError
+          ..write('Error during upload: $e')
+          ..close();
+      }
     } else if (request.method == 'GET' && request.uri.path == '/friends') {
       final userId = request.uri.queryParameters['user_id'];
       if (userId == null) {
@@ -302,7 +438,7 @@ Future<void> main() async {
 
         // 3. Get all public clothing items for all friends
         final itemsResult = await pool.execute(
-          'SELECT id, user_id, img_link, type, material, color, style, description FROM closet WHERE user_id IN (${friendIds.join(',')}) AND public = TRUE',
+          'SELECT id, user_id, img_link, clothing_type, material, color, style, description FROM closet WHERE user_id IN (${friendIds.join(',')}) AND public = TRUE',
         );
 
         // 4. Group items by friend
@@ -310,12 +446,12 @@ Future<void> main() async {
         for (final row in itemsResult.rows) {
           final friendId = row.colByName('user_id').toString();
           final imgLink = row.colByName('img_link');
-          final imagePath = (imgLink != null) ? 'assets/images/clothes/$imgLink' : '';
+          final imagePath = (imgLink != null) ? 'http://10.0.2.2:8080/images/$imgLink' : '';
 
           final item = {
             'id': row.colByName('id').toString(),
             'imagePath': imagePath,
-            'type': row.colByName('type'),
+            'type': row.colByName('clothing_type'),
             'material': row.colByName('material'),
             'color': row.colByName('color'),
             'style': row.colByName('style'),
@@ -388,7 +524,7 @@ Future<void> main() async {
           '''
           SELECT
               oi.outfit_id,
-              c.id, c.img_link, c.type, c.material, c.color, c.style, c.description
+              c.id, c.img_link, clothing_type, c.material, c.color, c.style, c.description
           FROM outfit_items oi
           JOIN closet c ON oi.clothing_item_id = c.id
           WHERE oi.outfit_id IN (${outfitIds.join(',')})
@@ -400,12 +536,12 @@ Future<void> main() async {
         for (final row in itemsResult.rows) {
           final outfitId = row.colByName('outfit_id').toString();
           final imgLink = row.colByName('img_link');
-          final imagePath = (imgLink != null) ? 'assets/images/clothes/$imgLink' : '';
+          final imagePath = (imgLink != null) ? 'http://10.0.2.2:8080/images/$imgLink' : '';
 
           final item = {
             'id': row.colByName('id').toString(),
             'imagePath': imagePath,
-            'type': row.colByName('type'),
+            'type': row.colByName('clothing_type'),
             'material': row.colByName('material'),
             'color': row.colByName('color'),
             'style': row.colByName('style'),
@@ -454,18 +590,18 @@ Future<void> main() async {
 
       try {
         final results = await pool.execute(
-          'SELECT id, img_link, type, material, color, style, description FROM closet WHERE user_id = :user_id',
+          'SELECT id, img_link, clothing_type, material, color, style, description FROM closet WHERE user_id = :user_id',
           {'user_id': userId},
         );
 
         final items = results.rows.map((row) {
           final imgLink = row.colByName('img_link');
-          final imagePath = (imgLink != null) ? 'assets/images/clothes/$imgLink' : '';
+          final imagePath = (imgLink != null) ? 'http://10.0.2.2:8080/images/$imgLink' : '';
           
           return {
             'id': row.colByName('id').toString(),
             'imagePath': imagePath,
-            'type': row.colByName('type'),
+            'type': row.colByName('clothing_type'),
             'material': row.colByName('material'),
             'color': row.colByName('color'),
             'style': row.colByName('style'),

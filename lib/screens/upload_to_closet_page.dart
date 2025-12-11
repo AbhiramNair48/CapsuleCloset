@@ -5,17 +5,17 @@ import 'package:capsule_closet_app/services/image_recog.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:capsule_closet_app/services/auth_service.dart';
 import '../widgets/delete_icon_button.dart';
 
 class UploadToClosetPage extends StatefulWidget {
   const UploadToClosetPage({super.key});
-
   @override
   State<UploadToClosetPage> createState() => _UploadToClosetPageState();
 }
 
 class _UploadToClosetPageState extends State<UploadToClosetPage> {
-  final List<XFile> _selectedImages = [];
+    final List<XFile> _selectedImages = [];
   bool _isUploading = false;
 
   final ImagePicker _picker = ImagePicker();
@@ -67,7 +67,7 @@ class _UploadToClosetPageState extends State<UploadToClosetPage> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
+                        color: Colors.black.withOpacity(0.1),
                         blurRadius: 10,
                         offset: const Offset(0, -3),
                       ),
@@ -86,168 +86,188 @@ class _UploadToClosetPageState extends State<UploadToClosetPage> {
                           ),
                         ),
                         const SizedBox(height: 20),
-                                                Row(
-                                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                  children: [
-                                                    Text(
-                                                      'Selected Items (${drawerImages.length})',
-                                                      style: Theme.of(context).textTheme.titleLarge,
-                                                    ),
-                                                    TextButton(
-                                                      onPressed: () {
-                                                        Navigator.of(context).pop();
-                                                      },
-                                                      child: const Text('Done'),
-                                                    ),
-                                                  ],
-                                                ),
-                                                const SizedBox(height: 16),
-                                                Expanded(
-                                                  child: GridView.builder(
-                                                    controller: scrollController,
-                                                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                                                      maxCrossAxisExtent: 120,
-                                                      mainAxisSpacing: 12,
-                                                      crossAxisSpacing: 12,
-                                                      childAspectRatio: 1,
-                                                    ),
-                                                    itemCount: drawerImages.length, // Show all images
-                                                    itemBuilder: (context, index) {
-                                                      // Make sure index is within bounds in case the list changed
-                                                      if (index >= drawerImages.length) {
-                                                        return Container(); // Return empty container if index out of bounds
-                                                      }
-                                                      
-                                                      return Card(
-                                                        clipBehavior: Clip.antiAlias,
-                                                        child: Stack(
-                                                          fit: StackFit.expand, // Ensure the stack fills the container
-                                                          children: [
-                                                            // The image
-                                                            Image.file(
-                                                              File(drawerImages[index].path),
-                                                              fit: BoxFit.cover,
-                                                              errorBuilder: (context, error, stackTrace) {
-                                                                return const Icon(
-                                                                  Icons.broken_image,
-                                                                  size: 30,
-                                                                  color: Colors.grey,
-                                                                );
-                                                              },
-                                                            ),
-                                                                                        // Top-right positioned delete button - sits directly on the image
-                                                                                        Positioned(
-                                                                                          top: 6,
-                                                                                          right: 6,
-                                                                                          child: DeleteIconButton(
-                                                                                            onTap: () {
-                                                                                              // Remove from both the local list and the main list
-                                                                                              setDrawerState(() {
-                                                                                                drawerImages.removeAt(index);
-                                                                                              });
-                                                                                              
-                                                                                              setState(() {
-                                                                                                _selectedImages.removeAt(index);
-                                                                                              });
-                                                                                            },
-                                                                                            iconSize: 16,
-                                                                                          ),
-                                                                                        ),                                                          ],
-                                                        ),
-                                                      );
-                                                    },
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Selected Items (${drawerImages.length})',
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                              child: const Text('Done'),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Expanded(
+                          child: GridView.builder(
+                            controller: scrollController,
+                            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                              maxCrossAxisExtent: 120,
+                              mainAxisSpacing: 12,
+                              crossAxisSpacing: 12,
+                              childAspectRatio: 1,
+                            ),
+                            itemCount: drawerImages.length, // Show all images
+                            itemBuilder: (context, index) {
+                              // Make sure index is within bounds in case the list changed
+                              if (index >= drawerImages.length) {
+                                return Container(); // Return empty container if index out of bounds
+                              }
+                              
+                              return Card(
+                                clipBehavior: Clip.antiAlias,
+                                child: Stack(
+                                  fit: StackFit.expand, // Ensure the stack fills the container
+                                  children: [
+                                    // The image
+                                    Image.file(
+                                      File(drawerImages[index].path),
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return const Icon(
+                                          Icons.broken_image,
+                                          size: 30,
+                                          color: Colors.grey,
                                         );
                                       },
-                                    );
-                                  },
-                                );
-                              },
-                            );
-                          }
-                        
-                          // Uploads selected items to the closet after processing them.
-                          Future<void> _uploadItem() async {
-                            if (_selectedImages.isEmpty || _isUploading) {
-                              if (_selectedImages.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: const Text('Please select at least one image to upload'),
-                                    backgroundColor: Theme.of(context).colorScheme.error,
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                              }
-                              return;
-                            }
+                                    ),
+                                    // Top-right positioned delete button - sits directly on the image
+                                    Positioned(
+                                      top: 6,
+                                      right: 6,
+                                      child: DeleteIconButton(
+                                        onTap: () {
+                                          // Remove from both the local list and the main list
+                                          setDrawerState(() {
+                                            drawerImages.removeAt(index);
+                                          });
+                                          
+                                          setState(() {
+                                            _selectedImages.removeAt(index);
+                                          });
+                                        },
+                                        iconSize: 16,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
 
-                            setState(() {
-                              _isUploading = true;
-                            });
+  // Uploads selected items to the closet after processing them.
+  Future<void> _uploadItem() async {
+    if (_selectedImages.isEmpty || _isUploading) {
+      if (_selectedImages.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Please select at least one image to upload'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return;
+    }
 
-                            final imageRecognitionService = ImageRecognitionService();
-                            final dataService = Provider.of<DataService>(context, listen: false);
-                            int successCount = 0;
-                            int failureCount = 0;
+    setState(() {
+      _isUploading = true;
+    });
 
-                            for (final image in _selectedImages) {
-                              try {
-                                final clothingItem = await imageRecognitionService.recognizeImage(image);
-                                if (clothingItem != null) {
-                                  // For manual testing: print the recognized item data
-                                  final jsonString = JsonEncoder.withIndent('  ').convert(clothingItem.toJson());
-                                  debugPrint('--- Recognized Clothing Item ---');
-                                  debugPrint(jsonString);
+    final imageRecognitionService = ImageRecognitionService();
+    final dataService = Provider.of<DataService>(context, listen: false);
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final userId = authService.currentUser?['id']?.toString();
 
-                                  // This assumes `addClothingItem` is a method in your DataService
-                                  dataService.addClothingItem(clothingItem);
-                                  successCount++;
-                                } else {
-                                  failureCount++;
-                                }
-                              } catch (e) {
-                                failureCount++;
-                                debugPrint('Error processing image: $e');
-                              }
-                            }
+    if (userId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('You must be logged in to upload items.'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      setState(() {
+        _isUploading = false;
+      });
+      return;
+    }
 
-                            if (!mounted) return;
+    int successCount = 0;
+    int failureCount = 0;
 
-                            setState(() {
-                              _isUploading = false;
-                              _selectedImages.clear();
-                            });
+    for (final image in _selectedImages) {
+      try {
+        final recognizedItem = await imageRecognitionService.recognizeImage(image);
+        if (recognizedItem != null) {
+          final uploadedItem = await dataService.uploadClothingItem(
+            imageFile: image,
+            recognizedData: recognizedItem,
+            userId: userId,
+          );
+          if (uploadedItem != null) {
+            successCount++;
+          } else {
+            failureCount++;
+          }
+        } else {
+          failureCount++;
+        }
+      } catch (e) {
+        failureCount++;
+        debugPrint('Error processing image: $e');
+      }
+    }
 
-                            // Show summary message
-                            String message;
-                            Color backgroundColor;
+    if (!mounted) return;
 
-                            if (successCount > 0 && failureCount == 0) {
-                              message = '$successCount item${successCount > 1 ? 's' : ''} uploaded to closet successfully!';
-                              backgroundColor = Colors.green.shade600;
-                            } else if (successCount > 0 && failureCount > 0) {
-                              message = '$successCount item${successCount > 1 ? 's' : ''} uploaded, $failureCount failed.';
-                              backgroundColor = Colors.orange.shade800;
-                            } else {
-                              message = 'Upload failed for all items. Please try again.';
-                              backgroundColor = Theme.of(context).colorScheme.error;
-                            }
+    setState(() {
+      _isUploading = false;
+      _selectedImages.clear();
+    });
 
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(message),
-                                backgroundColor: backgroundColor,
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          }
-                        
-                          @override
-                          Widget build(BuildContext context) {
+    // Show summary message
+    String message;
+    Color backgroundColor;
+
+    if (successCount > 0 && failureCount == 0) {
+      message = '$successCount item${successCount > 1 ? 's' : ''} uploaded to closet successfully!';
+      backgroundColor = Colors.green.shade600;
+    } else if (successCount > 0 && failureCount > 0) {
+      message = '$successCount item${successCount > 1 ? 's' : ''} uploaded, $failureCount failed.';
+      backgroundColor = Colors.orange.shade800;
+    } else {
+      message = 'Upload failed for all items. Please try again.';
+      backgroundColor = Theme.of(context).colorScheme.error;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: backgroundColor,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+        
+          @override
+          Widget build(BuildContext context) {
                             // Calculate screen dimensions for responsive design
                             final screenHeight = MediaQuery.of(context).size.height;
                             

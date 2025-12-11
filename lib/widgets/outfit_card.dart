@@ -142,7 +142,7 @@ class OutfitCard extends StatelessWidget {
   }
 
   Widget _buildImage(String imagePath) {
-    return Image.asset(
+    return Image.network(
       imagePath,
       fit: BoxFit.cover,
       cacheWidth: 200, // Cache width for better performance

@@ -127,7 +127,7 @@ class OutfitPreview extends StatelessWidget {
                     maxHeight: 175, // Limit the height to prevent very tall images
                   ),
                   width: double.infinity,
-                  child: Image.asset(
+                  child: Image.network(
                     imagePaths[index],
                     fit: BoxFit.contain,
                     errorBuilder: (BuildContext context, Object exception, StackTrace? stackTrace) {
