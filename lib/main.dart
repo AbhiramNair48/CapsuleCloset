@@ -7,6 +7,7 @@ import 'screens/main_navigation_screen.dart'; // This is now the main screen aft
 import 'services/auth_service.dart';
 import 'services/data_service.dart';
 import 'services/ai_service.dart';
+import 'services/weather_service.dart';
 import 'theme/app_theme.dart';
 
 Future<void> main() async {
@@ -28,6 +29,7 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(create: (_) => AIService()),
         ChangeNotifierProvider(create: (_) => ThemeService()),
+        Provider(create: (_) => WeatherService()),
       ],
       child: Consumer<ThemeService>(
         builder: (context, themeService, child) {

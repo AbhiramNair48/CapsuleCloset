@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:mysql_client/mysql_client.dart';
 import 'dart:io';
 import 'dart:convert';
@@ -167,7 +169,7 @@ Future<void> main() async {
 
         final userId = userResult.rows.first.colByName('id');
 
-        if (userId == friendId) {
+        if (userId.toString() == friendId.toString()) {
              request.response
             ..statusCode = HttpStatus.badRequest
             ..write('Cannot add yourself as a friend')
@@ -549,7 +551,7 @@ Future<void> main() async {
               f.friend_id as receiver_id
           FROM friendships f
           JOIN users u ON f.user_id = u.id
-          WHERE f.friend_id = :user_id AND f.status = 'pending'
+          WHERE f.friend_id = :user_id AND f.status = \'pending\'
           ''',
           {'user_id': userId},
         );

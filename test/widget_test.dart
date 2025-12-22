@@ -52,7 +52,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         home: ChangeNotifierProvider(
-          create: (_) => DataService(),
+          create: (_) => DataService(null),
           child: Builder(
             builder: (context) {
               final dataService = Provider.of<DataService>(context);
