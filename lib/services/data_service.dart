@@ -9,10 +9,14 @@ import '../models/friend.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/user_profile.dart';
 import '../models/pending_friend_request.dart';
+import 'dart:io';
+
+import 'package:capsule_closet_app/services/storage_service.dart';
 
 /// Service class to manage all application data
 class DataService extends ChangeNotifier {
   final AuthService? _authService;
+  final StorageService _storageService = StorageService();
 
   List<ClothingItem> _clothingItems = [];
   List<Outfit> _outfits = [];
@@ -249,27 +253,42 @@ class DataService extends ChangeNotifier {
     }
   }
 
-  /// Uploads a new clothing item to the backend
+  /// Uploads a new clothing item to the backend (and Firebase Storage)
   Future<ClothingItem?> uploadClothingItem({
     required XFile imageFile,
     required ClothingItem recognizedData,
     required String userId,
   }) async {
+    String? downloadUrl;
     try {
+      // 1. Upload image to Firebase Storage first
+      try {
+        downloadUrl = await _storageService.uploadImage(File(imageFile.path));
+      } catch (e) {
+        if (kDebugMode) print('Firebase upload failed, falling back to local server upload: $e');
+        // Continue to try local upload if Firebase fails
+      }
+
       final url = Uri.parse('${AppConstants.baseUrl}/closet/upload');
       final request = http.MultipartRequest('POST', url);
 
-      // Add image file
-      request.files.add(await http.MultipartFile.fromPath('image', imageFile.path, filename: imageFile.name));
-
-      // Add data fields
+      // 2. Add data fields
       request.fields['user_id'] = userId;
       request.fields['type'] = recognizedData.type;
       request.fields['color'] = recognizedData.color;
       request.fields['material'] = recognizedData.material;
       request.fields['style'] = recognizedData.style;
       request.fields['description'] = recognizedData.description;
-      request.fields['public'] = 'false'; // Defaulting to false
+      request.fields['public'] = 'false';
+
+      // 3. Attach image source
+      if (downloadUrl != null) {
+        // If we have a Firebase URL, send it as a field
+        request.fields['img_url'] = downloadUrl;
+      } else {
+        // If Firebase failed (or skipped), try uploading the file directly to backend (legacy/fallback)
+        request.files.add(await http.MultipartFile.fromPath('image', imageFile.path, filename: imageFile.name));
+      }
 
       final response = await request.send();
 
@@ -278,7 +297,7 @@ class DataService extends ChangeNotifier {
         final newItem = ClothingItem.fromJson(jsonDecode(responseBody));
         
         // Add the new item to the local state
-        addClothingItem(newItem); // This already calls notifyListeners()
+        addClothingItem(newItem);
         
         return newItem;
       } else {
@@ -287,12 +306,24 @@ class DataService extends ChangeNotifier {
           final responseBody = await response.stream.bytesToString();
           print('Response body: $responseBody');
         }
+        
+        // CLEANUP: If backend failed and we uploaded to Firebase, delete the image
+        if (downloadUrl != null) {
+          await _storageService.deleteImage(downloadUrl);
+        }
+        
         return null;
       }
     } catch (e) {
       if (kDebugMode) {
         print('Error uploading item: $e');
       }
+      
+      // CLEANUP: If exception occurred and we uploaded to Firebase, delete the image
+      if (downloadUrl != null) {
+          await _storageService.deleteImage(downloadUrl);
+      }
+      
       return null;
     }
   }

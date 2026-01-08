@@ -330,10 +330,13 @@ Future<void> main() async {
           }
         }
 
-        if (savedFilename == null || itemData['user_id'] == null) {
+        // Use uploaded filename OR provided external URL
+        final finalImgLink = savedFilename ?? itemData['img_url'];
+
+        if (finalImgLink == null || itemData['user_id'] == null) {
             request.response
             ..statusCode = HttpStatus.badRequest
-            ..write('Missing image or user_id')
+            ..write('Missing image (file or img_url) or user_id')
             ..close();
             continue;
         }
@@ -350,7 +353,7 @@ Future<void> main() async {
             'material': itemData['material'],
             'style': itemData['style'],
             'description': itemData['description'],
-            'img_link': savedFilename,
+            'img_link': finalImgLink,
             'public': (itemData['public'] == 'true') ? 1 : 0,
           },
         );
@@ -368,7 +371,11 @@ Future<void> main() async {
 
         final row = newItemResult.rows.first;
         final imgLink = row.colByName('img_link');
-        final imagePath = (imgLink != null) ? 'http://10.0.2.2:8080/images/$imgLink' : '';
+        // If it's a full URL (Firebase), use it. Otherwise, construct local URL.
+        final imagePath = (imgLink != null && imgLink.startsWith('http')) 
+            ? imgLink 
+            : (imgLink != null) ? 'http://10.0.2.2:8080/images/$imgLink' : '';
+        
         print('Generated imagePath for new item: $imagePath');
         
         final newItemJson = {
@@ -551,7 +558,7 @@ Future<void> main() async {
               f.friend_id as receiver_id
           FROM friendships f
           JOIN users u ON f.user_id = u.id
-          WHERE f.friend_id = :user_id AND f.status = \'pending\'
+          WHERE f.friend_id = :user_id AND f.status = 'pending'
           ''',
           {'user_id': userId},
         );
@@ -637,7 +644,9 @@ Future<void> main() async {
         for (final row in itemsResult.rows) {
           final friendId = row.colByName('user_id').toString();
           final imgLink = row.colByName('img_link');
-          final imagePath = (imgLink != null) ? 'http://10.0.2.2:8080/images/$imgLink' : '';
+          final imagePath = (imgLink != null && imgLink.startsWith('http')) 
+              ? imgLink 
+              : (imgLink != null) ? 'http://10.0.2.2:8080/images/$imgLink' : '';
 
           final item = {
             'id': row.colByName('id').toString(),
@@ -728,7 +737,9 @@ Future<void> main() async {
         for (final row in itemsResult.rows) {
           final outfitId = row.colByName('outfit_id').toString();
           final imgLink = row.colByName('img_link');
-          final imagePath = (imgLink != null) ? 'http://10.0.2.2:8080/images/$imgLink' : '';
+          final imagePath = (imgLink != null && imgLink.startsWith('http')) 
+              ? imgLink 
+              : (imgLink != null) ? 'http://10.0.2.2:8080/images/$imgLink' : '';
 
           final item = {
             'id': row.colByName('id').toString(),
@@ -788,7 +799,9 @@ Future<void> main() async {
 
         final items = results.rows.map((row) {
           final imgLink = row.colByName('img_link');
-          final imagePath = (imgLink != null) ? 'http://10.0.2.2:8080/images/$imgLink' : '';
+          final imagePath = (imgLink != null && imgLink.startsWith('http')) 
+              ? imgLink 
+              : (imgLink != null) ? 'http://10.0.2.2:8080/images/$imgLink' : '';
           
           return {
             'id': row.colByName('id').toString(),

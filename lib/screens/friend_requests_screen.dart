@@ -34,7 +34,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
       if (mounted) {
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Friend request from ${request.senderUsername} ${status}.')),
+            SnackBar(content: Text('Friend request from ${request.senderUsername} $status.')),
           );
           // Refresh the list
           _fetchRequests();

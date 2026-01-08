@@ -1,17 +1,32 @@
-import 'package:capsule_closet_app/services/theme_service.dart';
+import 'package:capsule_closet_app/services/ai_service.dart';
+import 'package:capsule_closet_app/services/weather_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:capsule_closet_app/screens/login_screen.dart';
+import 'package:capsule_closet_app/screens/main_navigation_screen.dart';
+import 'package:capsule_closet_app/services/auth_service.dart';
+import 'package:capsule_closet_app/services/data_service.dart';
+import 'package:capsule_closet_app/services/theme_service.dart';
+import 'package:capsule_closet_app/theme/app_theme.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'screens/login_screen.dart';
-import 'screens/main_navigation_screen.dart'; // This is now the main screen after login
-import 'services/auth_service.dart';
-import 'services/data_service.dart';
-import 'services/ai_service.dart';
-import 'services/weather_service.dart';
-import 'theme/app_theme.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
-Future<void> main() async {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
+
+  // Initialize Firebase
+  // Note: Run 'flutterfire configure' to generate the correct firebase_options.dart
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } catch (e) {
+    debugPrint('Firebase initialization failed: $e');
+    // Continue running app even if Firebase fails (for dev without config)
+  }
+
   runApp(const MyApp());
 }
 
