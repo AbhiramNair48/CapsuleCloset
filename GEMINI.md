@@ -17,7 +17,7 @@ The application follows a layered architecture:
 *   **Data (`lib/data`):** Mock data sources.
 *   **Widgets (`lib/widgets`):** Reusable UI elements.
 *   **Theme (`lib/theme`):** Application theme configuration.
-*   **Backend (`backend/`):** Standalone Dart server (Shelf + MySQL) for data persistence (currently separate).
+*   **Backend (`backend/`):** Standalone Dart server (Shelf + MySQL) for data persistence.
 
 ## Building and Running
 
@@ -66,6 +66,7 @@ The application follows a layered architecture:
     *   `data/`: Mock data.
     *   `theme/`: Theme definitions.
 *   `backend/`: Server-side code (Dart/Shelf).
+    *   `bin/`: Server entry point (`server.dart`).
 *   `assets/`: Static assets (images, icons).
 *   `test/`: Unit and widget tests.
     *   `screens/`: Widget tests for screens.
@@ -108,3 +109,15 @@ The application follows a layered architecture:
 *   **Testing:**
     *   Created `test/widgets/generic_delete_screen_test.dart` with robust interaction tests.
     *   Verified **19 passing tests** total.
+
+## Refactor Log (December 22, 2025)
+*   **Test Fixes:**
+    *   Resolved multiple compilation errors in `test/` by updating `MockDataService`, `MockAuthService` and `MockAIService` to match current Service signatures.
+    *   Fixed `DataService` constructor usage in tests.
+    *   Refactored `AIChatPage` and `WeatherService` to use Dependency Injection (Provider) to fix `pumpAndSettle` timeout in tests.
+    *   Verified **21 passing tests** (1 skipped).
+*   **Backend Refactor:**
+    *   Moved server entry point from `backend/lib/database/server.dart` to `backend/bin/server.dart` to follow Dart conventions.
+    *   Fixed type mismatch bugs (`String` vs `int` IDs) in `server.dart` affecting friend requests and lookups.
+*   **Code Quality:**
+    *   Addressed `avoid_print` lints in backend.

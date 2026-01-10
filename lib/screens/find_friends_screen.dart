@@ -79,7 +79,7 @@ class _FindFriendsScreenState extends State<FindFriendsScreen> {
       if (mounted) {
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Friend request sent to ${recipientId}.')),
+            SnackBar(content: Text('Friend request sent to $recipientId.')),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(

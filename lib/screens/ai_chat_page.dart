@@ -205,7 +205,7 @@ class _WeatherModuleState extends State<WeatherModule> {
 
   Future<void> _loadWeather() async {
     try {
-      final weatherService = WeatherService();
+      final weatherService = context.read<WeatherService>();
       final weatherData = await weatherService.getCurrentWeather();
 
       if (mounted) {
@@ -457,7 +457,7 @@ class _AIChatPageState extends State<AIChatPage> {
     String? weatherString;
 
     try {
-      final weatherService = WeatherService();
+      final weatherService = context.read<WeatherService>();
       final weatherData = await weatherService.getCurrentWeather();
       if (weatherData.isNotEmpty) {
           weatherString =

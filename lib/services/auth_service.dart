@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:firebase_auth/firebase_auth.dart';
 import '../config/app_constants.dart';
 import 'data_service.dart';
 
@@ -66,6 +67,16 @@ class AuthService extends ChangeNotifier {
         final responseData = jsonDecode(response.body);
         _currentUser = responseData['user'];
         _isAuthenticated = true;
+        
+        // Sign in to Firebase Anonymously to allow Storage uploads
+        try {
+          await FirebaseAuth.instance.signInAnonymously();
+          if (kDebugMode) print('Firebase Anonymous Login Successful');
+        } catch (e) {
+          if (kDebugMode) print('Firebase Auth Error: $e');
+          // Proceed anyway, storage uploads might fail but app login succeeded
+        }
+
         notifyListeners();
         return true;
       } else {
@@ -133,9 +144,14 @@ class AuthService extends ChangeNotifier {
   }
 
   /// Logs out the current user
-  void logout() {
+  void logout() async {
     _currentUser = null;
     _isAuthenticated = false;
+    try {
+      await FirebaseAuth.instance.signOut();
+    } catch (e) {
+      if (kDebugMode) print('Firebase SignOut Error: $e');
+    }
     // _dataService?.logout();
     notifyListeners();
   }
