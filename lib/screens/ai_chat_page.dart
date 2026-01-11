@@ -120,6 +120,9 @@ class OutfitPreview extends StatelessWidget {
             physics: const NeverScrollableScrollPhysics(), // Disable scrolling within this list
             itemCount: imagePaths.length,
             itemBuilder: (context, index) {
+              final imagePath = imagePaths[index];
+              final isNetworkImage = imagePath.startsWith('http');
+
               return Card(
                 clipBehavior: Clip.antiAlias,
                 margin: const EdgeInsets.only(bottom: 8.0),
@@ -128,24 +131,37 @@ class OutfitPreview extends StatelessWidget {
                     maxHeight: 175, // Limit the height to prevent very tall images
                   ),
                   width: double.infinity,
-                  child: CachedNetworkImage(
-                    imageUrl: imagePaths[index],
-                    fit: BoxFit.contain,
-                    placeholder: (context, url) => const SizedBox(
-                      height: 100,
-                      child: Center(
-                        child: CircularProgressIndicator(),
-                      ),
-                    ),
-                    errorWidget: (BuildContext context, String url, dynamic error) {
-                      return const SizedBox(
-                        height: 100,
-                        child: Center(
-                          child: Icon(Icons.image_not_supported),
+                  child: isNetworkImage
+                      ? CachedNetworkImage(
+                          imageUrl: imagePath,
+                          fit: BoxFit.contain,
+                          placeholder: (context, url) => const SizedBox(
+                            height: 100,
+                            child: Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                          ),
+                          errorWidget: (BuildContext context, String url, dynamic error) {
+                            return const SizedBox(
+                              height: 100,
+                              child: Center(
+                                child: Icon(Icons.image_not_supported),
+                              ),
+                            );
+                          },
+                        )
+                      : Image.asset(
+                          imagePath,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const SizedBox(
+                              height: 100,
+                              child: Center(
+                                child: Icon(Icons.image_not_supported),
+                              ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
                 ),
               );
             },

@@ -5,7 +5,6 @@ import '../widgets/closet_content.dart';
 import '../widgets/apparel_info_overlay.dart';
 import '../widgets/empty_state_widget.dart';
 import 'delete_clothing_items_screen.dart';
-import 'upload_to_closet_page.dart';
 import '../models/clothing_item.dart';
 import '../services/navigation_service.dart';
 

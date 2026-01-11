@@ -17,6 +17,8 @@ class ClothingItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isNetworkImage = item.imagePath.startsWith('http');
+    
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -24,26 +26,41 @@ class ClothingItemCard extends StatelessWidget {
         child: Stack(
           children: [
             SizedBox.expand(
-              child: CachedNetworkImage(
-                imageUrl: item.imagePath,
-                fit: BoxFit.cover,
-                memCacheWidth: 300,
-                memCacheHeight: 300,
-                placeholder: (context, url) => Container(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  child: const Center(child: CircularProgressIndicator()),
-                ),
-                errorWidget: (context, url, error) {
-                  return Container(
-                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                    child: Icon(
-                      Icons.image_not_supported,
-                      size: _errorIconSize,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+              child: isNetworkImage 
+                ? CachedNetworkImage(
+                    imageUrl: item.imagePath,
+                    fit: BoxFit.cover,
+                    memCacheWidth: 300,
+                    memCacheHeight: 300,
+                    placeholder: (context, url) => Container(
+                      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                      child: const Center(child: CircularProgressIndicator()),
                     ),
-                  );
-                },
-              ),
+                    errorWidget: (context, url, error) {
+                      return Container(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        child: Icon(
+                          Icons.image_not_supported,
+                          size: _errorIconSize,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      );
+                    },
+                  )
+                : Image.asset(
+                    item.imagePath,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        child: Icon(
+                          Icons.image_not_supported,
+                          size: _errorIconSize,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      );
+                    },
+                  ),
             ),
             Positioned(
               top: 0,
