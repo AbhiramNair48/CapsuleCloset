@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../services/ai_service.dart';
 import '../services/data_service.dart';
 import '../models/outfit.dart';
@@ -127,10 +128,16 @@ class OutfitPreview extends StatelessWidget {
                     maxHeight: 175, // Limit the height to prevent very tall images
                   ),
                   width: double.infinity,
-                  child: Image.network(
-                    imagePaths[index],
+                  child: CachedNetworkImage(
+                    imageUrl: imagePaths[index],
                     fit: BoxFit.contain,
-                    errorBuilder: (BuildContext context, Object exception, StackTrace? stackTrace) {
+                    placeholder: (context, url) => const SizedBox(
+                      height: 100,
+                      child: Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    ),
+                    errorWidget: (BuildContext context, String url, dynamic error) {
                       return const SizedBox(
                         height: 100,
                         child: Center(

@@ -6,6 +6,7 @@ import 'delete_friends_screen.dart';
 import '../widgets/friend_card.dart';
 import 'find_friends_screen.dart';
 import 'friend_requests_screen.dart';
+import '../widgets/empty_state_widget.dart';
 
 class FriendsPage extends StatelessWidget {
   const FriendsPage({super.key});
@@ -72,6 +73,21 @@ class FriendsPage extends StatelessWidget {
             Expanded(
               child: Consumer<DataService>(
                 builder: (context, dataService, child) {
+                  if (dataService.friends.isEmpty) {
+                    return EmptyStateWidget(
+                      icon: Icons.group_outlined,
+                      message: 'No friends added yet',
+                      buttonText: 'Find Friends',
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const FindFriendsScreen(),
+                          ),
+                        );
+                      },
+                    );
+                  }
                   return GridView.builder(
                     padding: const EdgeInsets.all(16.0),
                     gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
