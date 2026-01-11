@@ -48,6 +48,7 @@ dependencies:
   flutter_image_compress: ^2.4.0
 
   path: any
+  cached_network_image: ^3.4.1
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -73,7 +74,6 @@ flutter:
   assets:
     - .env
     - assets/images/
-    - assets/images/clothes/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

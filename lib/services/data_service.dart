@@ -382,6 +382,18 @@ class DataService extends ChangeNotifier {
   /// Remove a clothing item by ID
   Future<void> removeClothingItem(String id) async {
     try {
+      // Find the item first to get its image URL
+      final itemToDelete = _clothingItems.firstWhere((item) => item.id == id, orElse: () => 
+        const ClothingItem(id: '', imagePath: '', type: '', material: '', color: '', style: '', description: '')
+      );
+
+      // If the item exists and has a valid image path, delete it from storage
+      if (itemToDelete.id.isNotEmpty && itemToDelete.imagePath.isNotEmpty) {
+        // We attempt to delete the image from storage. 
+        // Even if this fails (e.g. image already gone), we proceed to delete the record from backend.
+        await _storageService.deleteImage(itemToDelete.imagePath);
+      }
+
       final url = Uri.parse('${AppConstants.baseUrl}/closet/$id');
       final response = await http.delete(url);
 

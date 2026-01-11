@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import '../config/app_constants.dart';
-import 'data_service.dart';
 
 /// Authentication service for the application
 class AuthService extends ChangeNotifier {
@@ -30,19 +29,12 @@ class AuthService extends ChangeNotifier {
   ];
 
   Map<String, dynamic>? _currentUser;
-  bool _isAuthenticated = false;
   bool _isLoading = false;
-  DataService? _dataService;
 
   Map<String, dynamic>? get currentUser => _currentUser;
   String? get currentUserEmail => _currentUser?['email'];
   bool get isAuthenticated => _currentUser != null;
   bool get isLoading => _isLoading;
-
-  /// Updates the DataService reference
-  void updateDataService(DataService dataService) {
-    _dataService = dataService;
-  }
 
   /// Simulates a login attempt with network delay.
   /// Returns true if credentials match, false otherwise.
@@ -66,7 +58,6 @@ class AuthService extends ChangeNotifier {
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
         _currentUser = responseData['user'];
-        _isAuthenticated = true;
         
         // Sign in to Firebase Anonymously to allow Storage uploads
         try {
@@ -84,7 +75,6 @@ class AuthService extends ChangeNotifier {
           print('Login failed: ${response.statusCode} - ${response.body}');
         }
         _currentUser = null;
-        _isAuthenticated = false;
         notifyListeners();
         return false;
       }
@@ -93,7 +83,6 @@ class AuthService extends ChangeNotifier {
         print('Login error: $e');
       }
       _currentUser = null;
-      _isAuthenticated = false;
       _setLoading(false);
       notifyListeners();
       return false;
@@ -146,7 +135,6 @@ class AuthService extends ChangeNotifier {
   /// Logs out the current user
   void logout() async {
     _currentUser = null;
-    _isAuthenticated = false;
     try {
       await FirebaseAuth.instance.signOut();
     } catch (e) {

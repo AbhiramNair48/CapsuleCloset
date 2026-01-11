@@ -53,9 +53,6 @@ class MockAuthService extends ChangeNotifier implements AuthService {
   Map<String, dynamic>? get currentUser => null;
 
   @override
-  void updateDataService(dynamic dataService) {}
-
-  @override
   bool get isAuthenticated => false;
 
   @override

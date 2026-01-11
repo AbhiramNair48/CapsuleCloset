@@ -5,6 +5,7 @@ import 'closet_screen.dart'; // Closet tab
 import 'friends_page.dart'; // Friends tab
 import 'upload_to_closet_page.dart'; // Add tab
 import '../services/auth_service.dart';
+import '../services/navigation_service.dart';
 import 'profile_screen.dart';
 
 /// Main navigation screen that handles bottom navigation
@@ -23,16 +24,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   static const int _friendsTabIndex = 3;
   static const int _settingsTabIndex = 4;
 
-  int _selectedIndex = _homeTabIndex; // Start with Home tab
-
   void _onItemTapped(int index) {
     if (index == _settingsTabIndex) {
       _showSettingsDialog();
       return;
     }
-    setState(() {
-      _selectedIndex = index;
-    });
+    context.read<NavigationService>().setIndex(index);
   }
 
 
@@ -81,8 +78,8 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     );
   }
 
-  Widget _getCurrentBody() {
-    switch (_selectedIndex) {
+  Widget _getCurrentBody(int selectedIndex) {
+    switch (selectedIndex) {
       case _homeTabIndex:
         return const AIChatPage();
       case _closetTabIndex:
@@ -102,6 +99,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     @override
 
     Widget build(BuildContext context) {
+      final selectedIndex = context.watch<NavigationService>().selectedIndex;
 
       return Scaffold(
 
@@ -115,11 +113,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
         ),
 
-        body: _getCurrentBody(),
+        body: _getCurrentBody(selectedIndex),
 
         bottomNavigationBar: NavigationBar(
 
-          selectedIndex: _selectedIndex,
+          selectedIndex: selectedIndex,
 
           onDestinationSelected: _onItemTapped,
 

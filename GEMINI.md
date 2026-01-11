@@ -121,3 +121,18 @@ The application follows a layered architecture:
     *   Fixed type mismatch bugs (`String` vs `int` IDs) in `server.dart` affecting friend requests and lookups.
 *   **Code Quality:**
     *   Addressed `avoid_print` lints in backend.
+
+## Refactor Log (January 11, 2026)
+*   **Code Quality & Linting:**
+    *   Resolved all remaining `flutter analyze` issues (unused imports, deprecated members, unused fields).
+    *   Cleaned up `AuthService` by removing unused fields and methods.
+    *   Achieved **0 issues** in both `flutter analyze` and `dart analyze backend`.
+*   **Backend Architecture:**
+    *   Refactored `backend/bin/server.dart` to use `ApiHandlers` class, eliminating massive code duplication and improving separation of concerns.
+    *   Added `test` dependency to backend and established a baseline test infrastructure in `backend/test/`.
+*   **Robustness & Bug Fixes:**
+    *   Updated `AIChatPage` and `ClothingItemCard` to support both asset and network images dynamically.
+    *   Fixed a critical `pumpAndSettle` timeout in `AIChatPage` tests caused by `CachedNetworkImage` behavior with invalid paths.
+*   **Testing:**
+    *   Verified **22 passing tests** total (all frontend tests green, including previously failing AI chat tests).
+    *   Added backend sanity test.

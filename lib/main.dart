@@ -1,5 +1,6 @@
 import 'package:capsule_closet_app/services/ai_service.dart';
 import 'package:capsule_closet_app/services/weather_service.dart';
+import 'package:capsule_closet_app/services/navigation_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:capsule_closet_app/screens/login_screen.dart';
@@ -44,6 +45,7 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(create: (_) => AIService()),
         ChangeNotifierProvider(create: (_) => ThemeService()),
+        ChangeNotifierProvider(create: (_) => NavigationService()),
         Provider(create: (_) => WeatherService()),
       ],
       child: Consumer<ThemeService>(

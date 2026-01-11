@@ -66,7 +66,7 @@ class _UploadToClosetPageState extends State<UploadToClosetPage> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 10,
                         offset: const Offset(0, -3),
                       ),
@@ -289,7 +289,7 @@ class _UploadToClosetPageState extends State<UploadToClosetPage> {
                                                 borderRadius: BorderRadius.circular(32.0),
                                                 boxShadow: [
                                                   BoxShadow(
-                                                    color: theme.colorScheme.primary.withAlpha((255 * 0.1).round()),
+                                                    color: theme.colorScheme.primary.withValues(alpha: 0.1),
                                                     spreadRadius: 2,
                                                     blurRadius: 15,
                                                     offset: const Offset(0, 5),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../models/outfit.dart';
 
 /// Widget for displaying an outfit card with a collage of clothing items
@@ -142,12 +143,16 @@ class OutfitCard extends StatelessWidget {
   }
 
   Widget _buildImage(String imagePath) {
-    return Image.network(
-      imagePath,
+    return CachedNetworkImage(
+      imageUrl: imagePath,
       fit: BoxFit.cover,
-      cacheWidth: 200, // Cache width for better performance
-      cacheHeight: 200, // Cache height for better performance
-      errorBuilder: (context, error, stackTrace) {
+      memCacheWidth: 200, // Cache width for better performance
+      memCacheHeight: 200, // Cache height for better performance
+      placeholder: (context, url) => Container(
+        color: Colors.grey[200],
+        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      ),
+      errorWidget: (context, url, error) {
         return Container(
           color: Colors.grey[300],
           child: const Icon(

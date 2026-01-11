@@ -46,8 +46,6 @@ void main() {
       );
       dataService.addClothingItem(newItem);
       
-      final initialLength = dataService.clothingItems.length;
-
       // This will try to call HTTP delete and likely fail or log error, 
       // but if it handles error gracefully it might not remove from local list depending on implementation.
       // The current implementation REMOVES only on 200 OK.

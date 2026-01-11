@@ -3,11 +3,54 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
 
+class _WeatherCacheItem {
+  final Map<String, dynamic> data;
+  final DateTime timestamp;
+
+  _WeatherCacheItem(this.data, this.timestamp);
+}
+
 class WeatherService {
+  final Map<String, _WeatherCacheItem> _cache = {};
+  static const Duration _cacheDuration = Duration(minutes: 30);
+  Position? _lastFetchPosition;
+
   Future<Map<String, dynamic>> getCurrentWeather() async {
     try {
+      // Optimization: Check if we have a valid cache for the last known position
+      if (_lastFetchPosition != null) {
+        final cacheKey =
+            '${_lastFetchPosition!.latitude.toStringAsFixed(2)},${_lastFetchPosition!.longitude.toStringAsFixed(2)}';
+        if (_cache.containsKey(cacheKey)) {
+          final cachedItem = _cache[cacheKey]!;
+          final age = DateTime.now().difference(cachedItem.timestamp);
+          if (age < _cacheDuration) {
+            debugPrint('Returning fast cached weather data for $cacheKey');
+            return cachedItem.data;
+          }
+        }
+      }
+
       // 1. Get Location
       Position position = await _determinePosition();
+      _lastFetchPosition = position;
+
+      // Generate a cache key based on location (rounded to 2 decimal places approx 1.1km)
+      final String cacheKey =
+          '${position.latitude.toStringAsFixed(2)},${position.longitude.toStringAsFixed(2)}';
+
+      // Check cache
+      if (_cache.containsKey(cacheKey)) {
+        final cachedItem = _cache[cacheKey]!;
+        final age = DateTime.now().difference(cachedItem.timestamp);
+        if (age < _cacheDuration) {
+          debugPrint(
+              'Returning cached weather data for $cacheKey (Age: ${age.inMinutes} mins)');
+          return cachedItem.data;
+        } else {
+          _cache.remove(cacheKey); // Expired
+        }
+      }
 
       // 2. Call Open-Meteo API
       final url = Uri.parse(
@@ -26,7 +69,7 @@ class WeatherService {
         final precipChance = daily['precipitation_probability_max'][0];
         final dailyWeatherCode = daily['weather_code'][0]; // Use first day's weather code
 
-        return {
+        final weatherData = {
           'current_temp': currentTemp,
           'current_weather_code': currentWeatherCode,
           'max_temp': maxTemp,
@@ -35,6 +78,11 @@ class WeatherService {
           'daily_weather_code': dailyWeatherCode,
           'unit': data['current_units']['temperature_2m'] ?? '°C',
         };
+
+        // Update cache
+        _cache[cacheKey] = _WeatherCacheItem(weatherData, DateTime.now());
+
+        return weatherData;
       } else {
         throw Exception('Failed to load weather data');
       }

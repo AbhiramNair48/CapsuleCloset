@@ -3,8 +3,10 @@ import 'package:provider/provider.dart';
 import '../services/data_service.dart';
 import '../widgets/closet_content.dart';
 import '../widgets/apparel_info_overlay.dart';
+import '../widgets/empty_state_widget.dart';
 import 'delete_clothing_items_screen.dart';
 import '../models/clothing_item.dart';
+import '../services/navigation_service.dart';
 
 class ClothesTabScreen extends StatelessWidget {
   const ClothesTabScreen({super.key});
@@ -29,6 +31,16 @@ class ClothesTabScreen extends StatelessWidget {
       backgroundColor: Colors.transparent,
       body: Consumer<DataService>(
         builder: (context, dataService, child) {
+          if (dataService.clothingItems.isEmpty) {
+            return EmptyStateWidget(
+              icon: Icons.checkroom_outlined,
+              message: 'No clothing items yet',
+              buttonText: 'Add Item',
+              onPressed: () {
+                context.read<NavigationService>().setIndex(2); // Switch to Add tab
+              },
+            );
+          }
           return ClosetContent(
             items: dataService.clothingItems,
             onItemTap: (item) => _showApparelInfo(context, item),
