@@ -7,6 +7,7 @@ import 'package:capsule_closet_app/models/friend.dart';
 import 'package:capsule_closet_app/models/outfit.dart';
 import 'package:capsule_closet_app/models/user_profile.dart';
 import 'package:capsule_closet_app/models/pending_friend_request.dart';
+import 'package:capsule_closet_app/widgets/outfit_preview.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -43,6 +44,11 @@ class MockAIService extends ChangeNotifier implements AIService {
   void resetChat() {
     _messages.clear();
     notifyListeners();
+  }
+
+  @override
+  void injectBotResponse(String text) {
+     addBotMessage(text);
   }
 
   void addBotMessage(String text, {List<String>? imagePaths, List<String>? itemIds}) {
@@ -156,6 +162,12 @@ class MockDataService extends ChangeNotifier implements DataService {
 
   @override
   Future<ClothingItem?> uploadClothingItem({required XFile imageFile, required ClothingItem recognizedData, required String userId}) async => null;
+  
+  @override
+  Future<void> loadNotificationSettings(String userId) async {}
+
+  @override
+  Future<void> saveNotificationSettings(bool isEnabled, String? time, String? occasion) async {}
 }
 
 
