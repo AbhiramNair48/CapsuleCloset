@@ -16,6 +16,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late TextEditingController _nameController;
   late TextEditingController _genderController;
   late TextEditingController _styleController;
+  
+  bool _isDailyNotificationEnabled = false;
+  TimeOfDay _notificationTime = const TimeOfDay(hour: 8, minute: 0);
+  String _notificationOccasion = 'Casual';
+  
+  final List<String> _occasions = ['Casual', 'Work', 'Party', 'Date', 'Gym', 'School'];
 
   @override
   void initState() {
@@ -24,6 +30,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _nameController = TextEditingController(text: userProfile.name);
     _genderController = TextEditingController(text: userProfile.gender);
     _styleController = TextEditingController(text: userProfile.favoriteStyle);
+    
+    _isDailyNotificationEnabled = userProfile.isDailyNotificationEnabled;
+    if (userProfile.notificationTime != null) {
+      final parts = userProfile.notificationTime!.split(':');
+      if (parts.length == 2) {
+        _notificationTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+      }
+    }
+    if (userProfile.notificationOccasion != null && _occasions.contains(userProfile.notificationOccasion)) {
+      _notificationOccasion = userProfile.notificationOccasion!;
+    }
   }
 
   @override
@@ -34,20 +51,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.dispose();
   }
 
-  void _saveProfile() {
+  void _saveProfile() async {
     if (_formKey.currentState!.validate()) {
       final newProfile = UserProfile(
         name: _nameController.text,
         gender: _genderController.text,
         favoriteStyle: _styleController.text,
+        isDailyNotificationEnabled: _isDailyNotificationEnabled,
+        notificationTime: '${_notificationTime.hour}:${_notificationTime.minute.toString().padLeft(2, '0')}',
+        notificationOccasion: _notificationOccasion,
       );
 
       context.read<DataService>().updateUserProfile(newProfile);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Profile saved successfully')),
+      
+      // Save notification settings explicitly to handle scheduling
+      await context.read<DataService>().saveNotificationSettings(
+        _isDailyNotificationEnabled,
+        '${_notificationTime.hour}:${_notificationTime.minute.toString().padLeft(2, '0')}',
+        _notificationOccasion,
       );
-      Navigator.pop(context);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile and settings saved successfully')),
+        );
+        Navigator.pop(context);
+      }
+    }
+  }
+
+  Future<void> _selectTime(BuildContext context) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: _notificationTime,
+    );
+    if (picked != null && picked != _notificationTime) {
+      setState(() {
+        _notificationTime = picked;
+      });
     }
   }
 
@@ -78,6 +119,54 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   _styleController,
                   Icons.style),
               const SizedBox(height: 24),
+              
+              const Divider(),
+              const SizedBox(height: 8),
+              Text(
+                'Daily Outfit Notification',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              SwitchListTile(
+                title: const Text('Enable Daily Notifications'),
+                subtitle: const Text('Get an outfit suggestion every day'),
+                value: _isDailyNotificationEnabled,
+                onChanged: (bool value) {
+                  setState(() {
+                    _isDailyNotificationEnabled = value;
+                  });
+                },
+              ),
+              if (_isDailyNotificationEnabled) ...[
+                ListTile(
+                  leading: const Icon(Icons.access_time),
+                  title: const Text('Notification Time'),
+                  trailing: Text(_notificationTime.format(context)),
+                  onTap: () => _selectTime(context),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.event),
+                  title: const Text('Occasion'),
+                  trailing: DropdownButton<String>(
+                    value: _notificationOccasion,
+                    onChanged: (String? newValue) {
+                      if (newValue != null) {
+                        setState(() {
+                          _notificationOccasion = newValue;
+                        });
+                      }
+                    },
+                    items: _occasions.map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
+              const Divider(),
+              const SizedBox(height: 8),
+
               Consumer<ThemeService>(
                 builder: (context, themeService, child) {
                   return SwitchListTile(

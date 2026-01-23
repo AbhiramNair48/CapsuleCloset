@@ -1,17 +1,31 @@
 import 'package:capsule_closet_app/models/clothing_item.dart';
 import 'package:capsule_closet_app/services/data_service.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 
 void main() {
   late DataService dataService;
+  late MockClient mockClient;
 
   setUp(() {
-    dataService = DataService(null);
+    SharedPreferences.setMockInitialValues({});
+    
+    mockClient = MockClient((request) async {
+      // Mock DELETE clothing item
+      if (request.method == 'DELETE' && request.url.pathSegments.contains('closet')) {
+        return http.Response('', 200);
+      }
+      return http.Response('', 404);
+    });
+
+    dataService = DataService(null, httpClient: mockClient);
   });
 
   group('DataService', () {
     test('Initializes with mock data', () {
-      expect(dataService.clothingItems, isEmpty); // Changed from isNotEmpty because real service starts empty until fetch
+      expect(dataService.clothingItems, isEmpty); 
       expect(dataService.outfits, isEmpty);
       expect(dataService.friends, isEmpty);
     });
@@ -37,7 +51,8 @@ void main() {
     test('Removes clothing item', () async {
       final newItem = ClothingItem(
         id: 'test-id-remove',
-        imagePath: 'path',
+        imagePath: 'path', // This might trigger StorageService delete, which might fail if real.
+                           // But DataService catches that error.
         type: 'Type',
         material: 'Mat',
         color: 'Col',
@@ -46,12 +61,10 @@ void main() {
       );
       dataService.addClothingItem(newItem);
       
-      // This will try to call HTTP delete and likely fail or log error, 
-      // but if it handles error gracefully it might not remove from local list depending on implementation.
-      // The current implementation REMOVES only on 200 OK.
-      // So this test WILL FAIL without backend mock. 
-      // Skipping for now.
-    }, skip: 'Requires backend mock');
+      await dataService.removeClothingItem('test-id-remove');
+      
+      expect(dataService.clothingItems.contains(newItem), isFalse);
+    });
 
     test('Filters clothing items', () {
       final shirt = ClothingItem(

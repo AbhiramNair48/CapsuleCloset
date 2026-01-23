@@ -1,0 +1,4 @@
+Oracle Server login:
+
+user: admin
+password: &fcZ0xDM6a8@

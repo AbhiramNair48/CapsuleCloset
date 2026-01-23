@@ -12,11 +12,15 @@ import '../models/pending_friend_request.dart';
 import 'dart:io';
 
 import 'package:capsule_closet_app/services/storage_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:capsule_closet_app/services/notification_service.dart';
+import 'package:capsule_closet_app/services/background_service.dart';
 
 /// Service class to manage all application data
 class DataService extends ChangeNotifier {
   final AuthService? _authService;
   final StorageService _storageService = StorageService();
+  final http.Client _client;
 
   List<ClothingItem> _clothingItems = [];
   List<Outfit> _outfits = [];
@@ -32,7 +36,8 @@ class DataService extends ChangeNotifier {
   List<PendingFriendRequest> get pendingFriendRequests => _pendingFriendRequests;
   UserProfile get userProfile => _userProfile;
 
-  DataService(this._authService) {
+  DataService(this._authService, {http.Client? httpClient}) 
+      : _client = httpClient ?? http.Client() {
     _authService?.addListener(_onAuthStateChanged);
     _initializeData();
   }
@@ -40,6 +45,10 @@ class DataService extends ChangeNotifier {
   @override
   void dispose() {
     _authService?.removeListener(_onAuthStateChanged);
+    // Don't close client if injected? Or do? usually if we created it (default), we close it.
+    // If injected, the caller owns it. 
+    // But for simplicity, we won't close it here as it might be reused or global.
+    // Actually, http.Client() creates a new client.
     super.dispose();
   }
 
@@ -50,6 +59,7 @@ class DataService extends ChangeNotifier {
       fetchOutfits(userId.toString());
       fetchFriends(userId.toString());
       fetchPendingFriendRequests(userId.toString());
+      loadNotificationSettings(userId.toString());
     } else {
       _clearData();
     }
@@ -64,6 +74,81 @@ class DataService extends ChangeNotifier {
       fetchOutfits(userId.toString());
       fetchFriends(userId.toString());
       fetchPendingFriendRequests(userId.toString());
+      loadNotificationSettings(userId.toString());
+    }
+  }
+
+  /// Caches the current clothing items to SharedPreferences
+  Future<void> _cacheClothingItems(String userId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final itemsJson = jsonEncode(_clothingItems.map((e) => e.toJson()).toList());
+      await prefs.setString('cached_closet_$userId', itemsJson);
+    } catch (e) {
+      debugPrint('Error caching closet: $e');
+    }
+  }
+
+  /// Load notification settings from SharedPreferences
+  Future<void> loadNotificationSettings(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final isEnabled = prefs.getBool('dailyNotificationEnabled_$userId') ?? false;
+    final time = prefs.getString('dailyNotificationTime_$userId');
+    final occasion = prefs.getString('dailyNotificationOccasion_$userId');
+
+    _userProfile = _userProfile.copyWith(
+      isDailyNotificationEnabled: isEnabled,
+      notificationTime: time,
+      notificationOccasion: occasion,
+    );
+    notifyListeners();
+  }
+
+  /// Save notification settings to SharedPreferences and schedule/cancel notification
+  Future<void> saveNotificationSettings(bool isEnabled, String? time, String? occasion) async {
+    final userId = _authService?.currentUser?['id']?.toString();
+    if (userId == null) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('dailyNotificationEnabled_$userId', isEnabled);
+    // Save active user ID for background service
+    await prefs.setString('active_user_id', userId);
+    
+    if (time != null) await prefs.setString('dailyNotificationTime_$userId', time);
+    if (occasion != null) await prefs.setString('dailyNotificationOccasion_$userId', occasion);
+
+    _userProfile = _userProfile.copyWith(
+      isDailyNotificationEnabled: isEnabled,
+      notificationTime: time,
+      notificationOccasion: occasion,
+    );
+    
+    notifyListeners();
+
+    if (isEnabled && time != null && occasion != null) {
+      final parts = time.split(':');
+      if (parts.length == 2) {
+        final hour = int.parse(parts[0]);
+        final minute = int.parse(parts[1]);
+        
+        // Request permissions if needed
+        final hasPermission = await NotificationService().requestPermissions();
+        if (hasPermission) {
+            await NotificationService().scheduleDailyOutfitNotification(
+              hour: hour, 
+              minute: minute, 
+              occasion: occasion
+            );
+            
+            // Register background task
+            await BackgroundService.registerDailyTask(hour, minute);
+        } else {
+          debugPrint('Notification permissions denied');
+        }
+      }
+    } else {
+      await NotificationService().cancelDailyNotification();
+      await BackgroundService.cancelTask();
     }
   }
   
@@ -71,12 +156,14 @@ class DataService extends ChangeNotifier {
   Future<void> fetchClothingItems(String userId) async {
     try {
       final url = Uri.parse('${AppConstants.baseUrl}/closet?user_id=$userId');
-      final response = await http.get(url);
+      final response = await _client.get(url);
 
       if (response.statusCode == 200) {
         final List<dynamic> itemsJson = jsonDecode(response.body);
         _clothingItems = itemsJson.map((json) => ClothingItem.fromJson(json)).toList();
         _filteredClothingItems = List.from(_clothingItems);
+        // Cache the items for background use
+        _cacheClothingItems(userId);
       } else {
         if (kDebugMode) {
           print('Failed to load clothing items: ${response.statusCode}');
@@ -98,7 +185,7 @@ class DataService extends ChangeNotifier {
   Future<void> fetchOutfits(String userId) async {
     try {
       final url = Uri.parse('${AppConstants.baseUrl}/outfits?user_id=$userId');
-      final response = await http.get(url);
+      final response = await _client.get(url);
 
       if (response.statusCode == 200) {
         final List<dynamic> itemsJson = jsonDecode(response.body);
@@ -122,7 +209,7 @@ class DataService extends ChangeNotifier {
   Future<void> fetchFriends(String userId) async {
     try {
       final url = Uri.parse('${AppConstants.baseUrl}/friends?user_id=$userId');
-      final response = await http.get(url);
+      final response = await _client.get(url);
 
       if (response.statusCode == 200) {
         final List<dynamic> itemsJson = jsonDecode(response.body);
@@ -149,7 +236,7 @@ class DataService extends ChangeNotifier {
   Future<void> fetchPendingFriendRequests(String userId) async {
     try {
       final url = Uri.parse('${AppConstants.baseUrl}/friends/pending?user_id=$userId');
-      final response = await http.get(url);
+      final response = await _client.get(url);
 
       if (response.statusCode == 200) {
         final List<dynamic> itemsJson = jsonDecode(response.body);
@@ -173,7 +260,7 @@ class DataService extends ChangeNotifier {
   Future<List<Map<String, dynamic>>> searchUsers(String query) async {
     try {
       final url = Uri.parse('${AppConstants.baseUrl}/users/search?q=$query');
-      final response = await http.get(url);
+      final response = await _client.get(url);
 
       if (response.statusCode == 200) {
         final List<dynamic> usersJson = jsonDecode(response.body);
@@ -196,7 +283,7 @@ class DataService extends ChangeNotifier {
   Future<bool> sendFriendRequest(String senderUserEmail, String recipientId) async {
     try {
       final url = Uri.parse('${AppConstants.baseUrl}/friends/request');
-      final response = await http.post(
+      final response = await _client.post(
         url,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
@@ -225,7 +312,7 @@ class DataService extends ChangeNotifier {
   Future<bool> respondToFriendRequest(String friendshipId, String status) async {
     try {
       final url = Uri.parse('${AppConstants.baseUrl}/friends/request/$friendshipId');
-      final response = await http.patch(
+      final response = await _client.patch(
         url,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'status': status}),
@@ -290,7 +377,7 @@ class DataService extends ChangeNotifier {
         request.files.add(await http.MultipartFile.fromPath('image', imageFile.path, filename: imageFile.name));
       }
 
-      final response = await request.send();
+      final response = await _client.send(request);
 
       if (response.statusCode == 201) {
         final responseBody = await response.stream.bytesToString();
@@ -331,7 +418,7 @@ class DataService extends ChangeNotifier {
   Future<void> updateClothingItemPublicStatus(String itemId, bool isPublic) async {
     try {
       final url = Uri.parse('${AppConstants.baseUrl}/closet/$itemId/public');
-      final response = await http.patch(
+      final response = await _client.patch(
         url,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'public': isPublic}),
@@ -395,7 +482,7 @@ class DataService extends ChangeNotifier {
       }
 
       final url = Uri.parse('${AppConstants.baseUrl}/closet/$id');
-      final response = await http.delete(url);
+      final response = await _client.delete(url);
 
       if (response.statusCode == 200) {
         _clothingItems.removeWhere((item) => item.id == id);
@@ -417,7 +504,7 @@ class DataService extends ChangeNotifier {
   Future<void> updateClothingItem(ClothingItem updatedItem) async {
     try {
       final url = Uri.parse('${AppConstants.baseUrl}/closet/${updatedItem.id}');
-      final response = await http.patch(
+      final response = await _client.patch(
         url,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(updatedItem.toJson()), // Send all relevant fields

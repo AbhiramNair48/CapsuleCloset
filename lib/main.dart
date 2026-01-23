@@ -12,9 +12,13 @@ import 'package:capsule_closet_app/theme/app_theme.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'package:capsule_closet_app/services/notification_service.dart';
+import 'package:capsule_closet_app/services/background_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await NotificationService().init();
+  await BackgroundService.initialize();
   await dotenv.load(fileName: ".env");
 
   // Initialize Firebase

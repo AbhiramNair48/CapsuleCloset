@@ -202,8 +202,24 @@ class AIService extends ChangeNotifier {
   /// Resets the chat by clearing messages and starting a new session
   void resetChat() {
     _messages.clear();
-    _chatSession = null;
-    _lastSystemPrompt = null;
-    notifyListeners();
-  }
-}
+        _chatSession = null;
+        _lastSystemPrompt = null;
+        notifyListeners();
+      }
+    
+      /// Injects a pre-generated response into the chat stream (e.g. from background task)
+      void injectBotResponse(String text) {
+        // Optionally add a user prompt context if needed, e.g. "Show me my daily outfit"
+        // _messages.add(Message(text: "Here is your daily outfit!", isUser: true)); 
+        
+        final extractionResult = processResponse(text);
+        _messages.add(Message(
+          text: extractionResult.cleanText,
+          isUser: false,
+          imagePaths: extractionResult.imagePaths,
+          itemIds: extractionResult.itemIds,
+        ));
+        notifyListeners();
+      }
+    }
+    
