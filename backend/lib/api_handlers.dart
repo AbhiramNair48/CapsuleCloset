@@ -4,15 +4,18 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:mime/mime.dart';
 import 'package:mysql_client/mysql_client.dart';
+import 'package:shelf/shelf.dart';
+import 'package:shelf_router/shelf_router.dart';
+import 'package:http_parser/http_parser.dart';
 
 class ApiHandlers {
   final MySQLConnectionPool pool;
 
   ApiHandlers(this.pool);
 
-  Future<void> handleSignup(HttpRequest request) async {
+  Future<Response> handleSignup(Request request) async {
     try {
-      final content = await utf8.decoder.bind(request).join();
+      final content = await request.readAsString();
       final data = jsonDecode(content) as Map<String, dynamic>;
 
       final username = data['username'];
@@ -22,11 +25,7 @@ class ApiHandlers {
       final favoriteStyle = data['favorite_style'];
 
       if (username == null || email == null || password == null) {
-        request.response
-          ..statusCode = HttpStatus.badRequest
-          ..write('Missing required fields')
-          ..close();
-        return;
+        return Response.badRequest(body: 'Missing required fields');
       }
 
       final passwordHash = sha256.convert(utf8.encode(password)).toString();
@@ -42,40 +41,27 @@ class ApiHandlers {
         },
       );
 
-      request.response
-        ..statusCode = HttpStatus.ok
-        ..write('User registered successfully')
-        ..close();
+      return Response.ok('User registered successfully');
     } catch (e) {
       print('Error during signup: $e');
       if (e.toString().contains('Duplicate entry')) {
-        request.response
-          ..statusCode = HttpStatus.conflict
-          ..write('Username or email already exists')
-          ..close();
+        return Response(409, body: 'Username or email already exists'); // Conflict
       } else {
-        request.response
-          ..statusCode = HttpStatus.internalServerError
-          ..write('Error registering user: $e')
-          ..close();
+        return Response.internalServerError(body: 'Error registering user: $e');
       }
     }
   }
 
-  Future<void> handleLogin(HttpRequest request) async {
+  Future<Response> handleLogin(Request request) async {
     try {
-      final content = await utf8.decoder.bind(request).join();
+      final content = await request.readAsString();
       final data = jsonDecode(content) as Map<String, dynamic>;
 
       final email = data['email'];
       final password = data['password'];
 
       if (email == null || password == null) {
-        request.response
-          ..statusCode = HttpStatus.badRequest
-          ..write('Missing email or password')
-          ..close();
-        return;
+        return Response.badRequest(body: 'Missing email or password');
       }
 
       final result = await pool.execute(
@@ -84,11 +70,7 @@ class ApiHandlers {
       );
 
       if (result.rows.isEmpty) {
-        request.response
-          ..statusCode = HttpStatus.unauthorized
-          ..write('Invalid email or password')
-          ..close();
-        return;
+        return Response.forbidden('Invalid email or password');
       }
 
       final row = result.rows.first;
@@ -101,34 +83,23 @@ class ApiHandlers {
           'username': row.colByName('username'),
           'email': row.colByName('email'),
         };
-        request.response
-          ..statusCode = HttpStatus.ok
-          ..headers.contentType = ContentType.json
-          ..write(jsonEncode({'message': 'Successful login!', 'user': user}))
-          ..close();
+        return Response.ok(
+          jsonEncode({'message': 'Successful login!', 'user': user}),
+          headers: {'content-type': 'application/json'},
+        );
       } else {
-        request.response
-          ..statusCode = HttpStatus.unauthorized
-          ..write('Invalid email or password')
-          ..close();
+        return Response.forbidden('Invalid email or password');
       }
     } catch (e) {
       print('Error during login: $e');
-      request.response
-        ..statusCode = HttpStatus.internalServerError
-        ..write('Error Logging In: $e')
-        ..close();
+      return Response.internalServerError(body: 'Error Logging In: $e');
     }
   }
 
-  Future<void> handleSearchUsers(HttpRequest request) async {
-    final query = request.uri.queryParameters['q'];
+  Future<Response> handleSearchUsers(Request request) async {
+    final query = request.url.queryParameters['q'];
     if (query == null || query.isEmpty) {
-      request.response
-        ..statusCode = HttpStatus.badRequest
-        ..write('Missing query parameter q')
-        ..close();
-      return;
+      return Response.badRequest(body: 'Missing query parameter q');
     }
 
     try {
@@ -143,34 +114,26 @@ class ApiHandlers {
         'favorite_style': row.colByName('favorite_style'),
       }).toList();
 
-      request.response
-        ..statusCode = HttpStatus.ok
-        ..headers.contentType = ContentType.json
-        ..write(jsonEncode(users))
-        ..close();
+      return Response.ok(
+        jsonEncode(users),
+        headers: {'content-type': 'application/json'},
+      );
     } catch (e) {
       print('Error searching users: $e');
-      request.response
-        ..statusCode = HttpStatus.internalServerError
-        ..write('Error searching users')
-        ..close();
+      return Response.internalServerError(body: 'Error searching users');
     }
   }
 
-  Future<void> handleSendFriendRequest(HttpRequest request) async {
+  Future<Response> handleSendFriendRequest(Request request) async {
     try {
-      final content = await utf8.decoder.bind(request).join();
+      final content = await request.readAsString();
       final data = jsonDecode(content) as Map<String, dynamic>;
 
       final userEmail = data['user_email'];
       final friendId = data['friend_id'];
 
       if (userEmail == null || friendId == null) {
-        request.response
-          ..statusCode = HttpStatus.badRequest
-          ..write('Missing required fields')
-          ..close();
-        return;
+        return Response.badRequest(body: 'Missing required fields');
       }
 
       final userResult = await pool.execute(
@@ -179,22 +142,13 @@ class ApiHandlers {
       );
 
       if (userResult.rows.isEmpty) {
-        request.response
-          ..statusCode = HttpStatus.notFound
-          ..write('User not found')
-          ..close();
-        return;
+        return Response.notFound('User not found');
       }
 
       final userId = userResult.rows.first.colByName('id');
 
-      // Ensure explicit String comparison
       if (userId.toString() == friendId.toString()) {
-        request.response
-          ..statusCode = HttpStatus.badRequest
-          ..write('Cannot add yourself as a friend')
-          ..close();
-        return;
+        return Response.badRequest(body: 'Cannot add yourself as a friend');
       }
 
       await pool.execute(
@@ -202,53 +156,35 @@ class ApiHandlers {
         {"user_id": userId, "friend_id": friendId},
       );
 
-      request.response
-        ..statusCode = HttpStatus.ok
-        ..write('Friend request sent')
-        ..close();
+      return Response.ok('Friend request sent');
     } catch (e) {
       print('Error sending friend request: $e');
       if (e.toString().contains('Duplicate entry')) {
-        request.response
-          ..statusCode = HttpStatus.conflict
-          ..write('Friend request already sent or exists')
-          ..close();
+        return Response(409, body: 'Friend request already sent or exists');
       } else {
-        request.response
-          ..statusCode = HttpStatus.internalServerError
-          ..write('Error sending friend request: $e')
-          ..close();
+        return Response.internalServerError(body: 'Error sending friend request: $e');
       }
     }
   }
 
-  Future<void> handleUpdateFriendRequest(HttpRequest request) async {
+  Future<Response> handleUpdateFriendRequest(Request request) async {
     try {
-      final pathSegments = request.uri.pathSegments;
-      // Expecting /friends/request/<friendshipId>
-      final friendshipIdString = pathSegments.last; 
+      final friendshipIdString = request.params['friendshipId'];
+      if (friendshipIdString == null) return Response.badRequest(body: 'Missing friendshipId');
 
       final ids = friendshipIdString.split('_');
       if (ids.length != 2) {
-        request.response
-          ..statusCode = HttpStatus.badRequest
-          ..write('Invalid friendshipId format. Expected "senderId_receiverId".')
-          ..close();
-        return;
+        return Response.badRequest(body: 'Invalid friendshipId format. Expected "senderId_receiverId".');
       }
       final senderId = ids[0];
       final receiverId = ids[1];
 
-      final content = await utf8.decoder.bind(request).join();
+      final content = await request.readAsString();
       final data = jsonDecode(content) as Map<String, dynamic>;
       final status = data['status'] as String?;
 
       if (status == null || !['accepted', 'rejected'].contains(status)) {
-        request.response
-          ..statusCode = HttpStatus.badRequest
-          ..write('Invalid status provided. Must be "accepted" or "rejected".')
-          ..close();
-        return;
+        return Response.badRequest(body: 'Invalid status provided. Must be "accepted" or "rejected".');
       }
 
       await pool.execute(
@@ -256,27 +192,17 @@ class ApiHandlers {
         {'status': status, 'sender_id': senderId, 'receiver_id': receiverId},
       );
 
-      request.response
-        ..statusCode = HttpStatus.ok
-        ..write('Friend request status updated successfully')
-        ..close();
+      return Response.ok('Friend request status updated successfully');
     } catch (e) {
       print('Error updating friend request status: $e');
-      request.response
-        ..statusCode = HttpStatus.internalServerError
-        ..write('Error updating friend request status: $e')
-        ..close();
+      return Response.internalServerError(body: 'Error updating friend request status: $e');
     }
   }
 
-  Future<void> handleGetPendingFriendRequests(HttpRequest request) async {
-    final userId = request.uri.queryParameters['user_id'];
+  Future<Response> handleGetPendingFriendRequests(Request request) async {
+    final userId = request.url.queryParameters['user_id'];
     if (userId == null) {
-      request.response
-        ..statusCode = HttpStatus.badRequest
-        ..write('Missing user_id query parameter')
-        ..close();
-      return;
+      return Response.badRequest(body: 'Missing user_id query parameter');
     }
 
     try {
@@ -292,44 +218,30 @@ class ApiHandlers {
         'senderEmail': row.colByName('sender_email'),
       }).toList();
 
-      request.response
-        ..statusCode = HttpStatus.ok
-        ..headers.contentType = ContentType.json
-        ..write(jsonEncode(pendingRequests))
-        ..close();
+      return Response.ok(
+        jsonEncode(pendingRequests),
+        headers: {'content-type': 'application/json'},
+      );
     } catch (e) {
       print('Error fetching pending friend requests: $e');
-      request.response
-        ..statusCode = HttpStatus.internalServerError
-        ..write('Error fetching pending friend requests: $e')
-        ..close();
+      return Response.internalServerError(body: 'Error fetching pending friend requests: $e');
     }
   }
 
-  Future<void> handleGetFriends(HttpRequest request) async {
-    final userId = request.uri.queryParameters['user_id'];
+  Future<Response> handleGetFriends(Request request) async {
+    final userId = request.url.queryParameters['user_id'];
     if (userId == null) {
-      request.response
-        ..statusCode = HttpStatus.badRequest
-        ..write('Missing user_id query parameter')
-        ..close();
-      return;
+      return Response.badRequest(body: 'Missing user_id query parameter');
     }
 
     try {
-      // 1. Get all accepted friend IDs (bidirectional)
       final rawFriendships = await pool.execute(
         "SELECT user_id, friend_id FROM friendships WHERE (user_id = :user_id OR friend_id = :user_id) AND status = 'accepted'",
         {'user_id': userId},
       );
 
       if (rawFriendships.rows.isEmpty) {
-        request.response
-          ..statusCode = HttpStatus.ok
-          ..headers.contentType = ContentType.json
-          ..write(jsonEncode([]))
-          ..close();
-        return;
+        return Response.ok(jsonEncode([]), headers: {'content-type': 'application/json'});
       }
 
       final Set<String> friendIds = {};
@@ -344,25 +256,17 @@ class ApiHandlers {
       }
 
       if (friendIds.isEmpty) {
-        request.response
-          ..statusCode = HttpStatus.ok
-          ..headers.contentType = ContentType.json
-          ..write(jsonEncode([]))
-          ..close();
-        return;
+        return Response.ok(jsonEncode([]), headers: {'content-type': 'application/json'});
       }
 
-      // 2. Get friend details from users table
       final friendsResult = await pool.execute(
         'SELECT id, username FROM users WHERE id IN (${friendIds.join(',')})',
       );
 
-      // 3. Get all public clothing items for all friends
       final itemsResult = await pool.execute(
         'SELECT id, user_id, img_link, clothing_type, material, color, style, description, public FROM closet WHERE user_id IN (${friendIds.join(',')}) AND public = TRUE',
       );
 
-      // 4. Group items by friend
       final Map<String, List<Map<String, dynamic>>> itemsByFriendId = {};
       for (final row in itemsResult.rows) {
         final friendId = row.colByName('user_id').toString();
@@ -388,7 +292,6 @@ class ApiHandlers {
         itemsByFriendId[friendId]!.add(item);
       }
 
-      // 5. Construct final JSON
       final friendsJson = friendsResult.rows.map((row) {
         final friendId = row.colByName('id').toString();
         final allItems = itemsByFriendId[friendId] ?? [];
@@ -402,35 +305,32 @@ class ApiHandlers {
         };
       }).toList();
 
-      request.response
-        ..statusCode = HttpStatus.ok
-        ..headers.contentType = ContentType.json
-        ..write(jsonEncode(friendsJson))
-        ..close();
+      return Response.ok(
+        jsonEncode(friendsJson),
+        headers: {'content-type': 'application/json'},
+      );
     } catch (e) {
       print('Error fetching friends: $e');
-      request.response
-        ..statusCode = HttpStatus.internalServerError
-        ..write('Error fetching friends: $e')
-        ..close();
+      return Response.internalServerError(body: 'Error fetching friends: $e');
     }
   }
 
-  Future<void> handleClosetUpload(HttpRequest request) async {
-    final boundary = request.headers.contentType?.parameters['boundary'];
+  Future<Response> handleClosetUpload(Request request) async {
+    final contentType = request.headers['content-type'];
+    if (contentType == null) return Response.badRequest(body: 'Missing Content-Type header');
+    
+    final mediaType = MediaType.parse(contentType);
+    final boundary = mediaType.parameters['boundary'];
+    
     if (boundary == null) {
-      request.response
-        ..statusCode = HttpStatus.badRequest
-        ..write('Missing multipart boundary')
-        ..close();
-      return;
+      return Response.badRequest(body: 'Missing multipart boundary');
     }
 
     try {
       String? savedFilename;
       final itemData = <String, String>{};
       final transformer = MimeMultipartTransformer(boundary);
-      final stream = request.cast<List<int>>().transform(transformer);
+      final stream = request.read().transform(transformer);
 
       await for (final part in stream) {
         final contentDisposition = part.headers['content-disposition'];
@@ -458,11 +358,7 @@ class ApiHandlers {
       final finalImgLink = savedFilename ?? itemData['img_url'];
 
       if (finalImgLink == null || itemData['user_id'] == null) {
-        request.response
-          ..statusCode = HttpStatus.badRequest
-          ..write('Missing image (file or img_url) or user_id')
-          ..close();
-        return;
+        return Response.badRequest(body: 'Missing image (file or img_url) or user_id');
       }
 
       final insertResult = await pool.execute(
@@ -500,8 +396,6 @@ class ApiHandlers {
               ? 'http://10.0.2.2:8080/images/$imgLink'
               : '';
 
-      print('Generated imagePath for new item: $imagePath');
-
       final newItemJson = {
         'id': row.colByName('id').toString(),
         'imagePath': imagePath,
@@ -513,27 +407,23 @@ class ApiHandlers {
         'public': row.colByName('public') == '1',
       };
 
-      request.response
-        ..statusCode = HttpStatus.created
-        ..headers.contentType = ContentType.json
-        ..write(jsonEncode(newItemJson))
-        ..close();
+      return Response(
+        201, // Created
+        body: jsonEncode(newItemJson),
+        headers: {'content-type': 'application/json'},
+      );
     } catch (e) {
       print('Error during upload: $e');
-      request.response
-        ..statusCode = HttpStatus.internalServerError
-        ..write('Error during upload: $e')
-        ..close();
+      return Response.internalServerError(body: 'Error during upload: $e');
     }
   }
 
-  Future<void> handleClosetUpdatePublic(HttpRequest request) async {
+  Future<Response> handleClosetUpdatePublic(Request request) async {
     try {
-      final pathSegments = request.uri.pathSegments;
-      // Expecting /closet/<itemId>/public
-      final itemId = pathSegments[pathSegments.length - 2];
+      final itemId = request.params['itemId'];
+      if (itemId == null) return Response.badRequest(body: 'Missing itemId');
 
-      final content = await utf8.decoder.bind(request).join();
+      final content = await request.readAsString();
       final data = jsonDecode(content) as Map<String, dynamic>;
       final isPublic = data['public'] as bool;
 
@@ -542,25 +432,19 @@ class ApiHandlers {
         {'public': isPublic ? 1 : 0, 'id': itemId},
       );
 
-      request.response
-        ..statusCode = HttpStatus.ok
-        ..write('Updated successfully')
-        ..close();
+      return Response.ok('Updated successfully');
     } catch (e) {
       print('Error updating public status: $e');
-      request.response
-        ..statusCode = HttpStatus.internalServerError
-        ..write('Error updating public status: $e')
-        ..close();
+      return Response.internalServerError(body: 'Error updating public status: $e');
     }
   }
 
-  Future<void> handleClosetUpdateDetails(HttpRequest request) async {
+  Future<Response> handleClosetUpdateDetails(Request request) async {
     try {
-      final pathSegments = request.uri.pathSegments;
-      final itemId = pathSegments.last;
+      final itemId = request.params['itemId'];
+      if (itemId == null) return Response.badRequest(body: 'Missing itemId');
 
-      final content = await utf8.decoder.bind(request).join();
+      final content = await request.readAsString();
       final data = jsonDecode(content) as Map<String, dynamic>;
 
       final updates = <String, dynamic>{};
@@ -573,11 +457,7 @@ class ApiHandlers {
       }
 
       if (updates.isEmpty) {
-        request.response
-          ..statusCode = HttpStatus.badRequest
-          ..write('No fields to update')
-          ..close();
-        return;
+        return Response.badRequest(body: 'No fields to update');
       }
 
       final updateQueryParts =
@@ -588,50 +468,34 @@ class ApiHandlers {
         {...updates, 'id': itemId},
       );
 
-      request.response
-        ..statusCode = HttpStatus.ok
-        ..write('Clothing item updated successfully')
-        ..close();
+      return Response.ok('Clothing item updated successfully');
     } catch (e) {
       print('Error updating clothing item: $e');
-      request.response
-        ..statusCode = HttpStatus.internalServerError
-        ..write('Error updating clothing item: $e')
-        ..close();
+      return Response.internalServerError(body: 'Error updating clothing item: $e');
     }
   }
 
-  Future<void> handleClosetDelete(HttpRequest request) async {
+  Future<Response> handleClosetDelete(Request request) async {
     try {
-      final pathSegments = request.uri.pathSegments;
-      final itemId = pathSegments.last;
+      final itemId = request.params['itemId'];
+      if (itemId == null) return Response.badRequest(body: 'Missing itemId');
 
       await pool.execute(
         'DELETE FROM closet WHERE id = :id',
         {'id': itemId},
       );
 
-      request.response
-        ..statusCode = HttpStatus.ok
-        ..write('Clothing item deleted successfully')
-        ..close();
+      return Response.ok('Clothing item deleted successfully');
     } catch (e) {
       print('Error deleting clothing item: $e');
-      request.response
-        ..statusCode = HttpStatus.internalServerError
-        ..write('Error deleting clothing item: $e')
-        ..close();
+      return Response.internalServerError(body: 'Error deleting clothing item: $e');
     }
   }
 
-  Future<void> handleGetCloset(HttpRequest request) async {
-    final userId = request.uri.queryParameters['user_id'];
+  Future<Response> handleGetCloset(Request request) async {
+    final userId = request.url.queryParameters['user_id'];
     if (userId == null) {
-      request.response
-        ..statusCode = HttpStatus.badRequest
-        ..write('Missing user_id query parameter')
-        ..close();
-      return;
+      return Response.badRequest(body: 'Missing user_id query parameter');
     }
 
     try {
@@ -660,28 +524,20 @@ class ApiHandlers {
         };
       }).toList();
 
-      request.response
-        ..statusCode = HttpStatus.ok
-        ..headers.contentType = ContentType.json
-        ..write(jsonEncode(items))
-        ..close();
+      return Response.ok(
+        jsonEncode(items),
+        headers: {'content-type': 'application/json'},
+      );
     } catch (e) {
       print('Error fetching closet items: $e');
-      request.response
-        ..statusCode = HttpStatus.internalServerError
-        ..write('Error fetching closet items: $e')
-        ..close();
+      return Response.internalServerError(body: 'Error fetching closet items: $e');
     }
   }
 
-  Future<void> handleGetOutfits(HttpRequest request) async {
-    final userId = request.uri.queryParameters['user_id'];
+  Future<Response> handleGetOutfits(Request request) async {
+    final userId = request.url.queryParameters['user_id'];
     if (userId == null) {
-      request.response
-        ..statusCode = HttpStatus.badRequest
-        ..write('Missing user_id query parameter')
-        ..close();
-      return;
+      return Response.badRequest(body: 'Missing user_id query parameter');
     }
 
     try {
@@ -691,12 +547,7 @@ class ApiHandlers {
       );
 
       if (outfitsResult.rows.isEmpty) {
-        request.response
-          ..statusCode = HttpStatus.ok
-          ..headers.contentType = ContentType.json
-          ..write(jsonEncode([]))
-          ..close();
-        return;
+        return Response.ok(jsonEncode([]), headers: {'content-type': 'application/json'});
       }
 
       final outfitIds =
@@ -750,29 +601,21 @@ class ApiHandlers {
         };
       }).toList();
 
-      request.response
-        ..statusCode = HttpStatus.ok
-        ..headers.contentType = ContentType.json
-        ..write(jsonEncode(outfitsJson))
-        ..close();
+      return Response.ok(
+        jsonEncode(outfitsJson),
+        headers: {'content-type': 'application/json'},
+      );
     } catch (e) {
       print('Error fetching outfits: $e');
-      request.response
-        ..statusCode = HttpStatus.internalServerError
-        ..write('Error fetching outfits: $e')
-        ..close();
+      return Response.internalServerError(body: 'Error fetching outfits: $e');
     }
   }
 
-  Future<void> handleServeImage(HttpRequest request) async {
-    final filename = request.uri.pathSegments.last;
+  Future<Response> handleServeImage(Request request) async {
+    final filename = request.params['filename'];
 
-    if (filename.contains('..') || filename.contains('/')) {
-      request.response
-        ..statusCode = HttpStatus.badRequest
-        ..write('Invalid filename')
-        ..close();
-      return;
+    if (filename == null || filename.contains('..') || filename.contains('/')) {
+      return Response.badRequest(body: 'Invalid filename');
     }
 
     final filePath = 'assets/images/clothes/$filename';
@@ -781,18 +624,12 @@ class ApiHandlers {
     if (await file.exists()) {
       final contentType =
           lookupMimeType(filename) ?? 'application/octet-stream';
-      request.response.headers.contentType = ContentType.parse(contentType);
-      try {
-        await request.response.addStream(file.openRead());
-        await request.response.close();
-      } catch (e) {
-        print('Error serving file: $e');
-      }
+      return Response.ok(
+        file.openRead(),
+        headers: {'content-type': contentType},
+      );
     } else {
-      request.response
-        ..statusCode = HttpStatus.notFound
-        ..write('Image not found')
-        ..close();
+      return Response.notFound('Image not found');
     }
   }
 }

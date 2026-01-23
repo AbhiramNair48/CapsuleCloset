@@ -4,6 +4,9 @@ import 'package:capsule_closet_backend/api_handlers.dart';
 import 'package:mysql_client/mysql_client.dart';
 import 'dart:io';
 import 'package:dotenv/dotenv.dart';
+import 'package:shelf/shelf.dart';
+import 'package:shelf/shelf_io.dart' as io;
+import 'package:shelf_router/shelf_router.dart';
 
 Future<void> main() async {
   var env = DotEnv(includePlatformEnvironment: true);
@@ -30,68 +33,84 @@ Future<void> main() async {
   );
 
   final apiHandlers = ApiHandlers(pool);
+  final app = Router();
 
-  final server = await HttpServer.bind(
-    InternetAddress.anyIPv4,
-    8080,
-  );
-
-  print('Server running on http://${server.address.address}:${server.port}/');
-
-  await for (HttpRequest request in server) {
-    try {
-      // Add CORS headers
-      request.response.headers.add('Access-Control-Allow-Origin', '*');
-      request.response.headers.add('Access-Control-Allow-Methods', 'POST, GET, OPTIONS, PATCH, DELETE');
-      request.response.headers.add('Access-Control-Allow-Headers', 'Content-Type');
-
-      if (request.method == 'OPTIONS') {
-        request.response.close();
-        continue;
-      }
-
-      print('Request: ${request.method} ${request.uri.path}');
-
-      if (request.method == 'POST' && request.uri.path == '/signup') {
-        await apiHandlers.handleSignup(request);
-      } else if (request.method == 'POST' && request.uri.path == '/login') {
-        await apiHandlers.handleLogin(request);
-      } else if (request.method == 'GET' && request.uri.path == '/users/search') {
-        await apiHandlers.handleSearchUsers(request);
-      } else if (request.method == 'POST' && request.uri.path == '/friends/request') {
-        await apiHandlers.handleSendFriendRequest(request);
-      } else if (request.method == 'PATCH' && request.uri.path.startsWith('/friends/request/')) {
-        await apiHandlers.handleUpdateFriendRequest(request);
-      } else if (request.method == 'GET' && request.uri.path == '/friends/pending') {
-        await apiHandlers.handleGetPendingFriendRequests(request);
-      } else if (request.method == 'GET' && request.uri.path == '/friends') {
-        await apiHandlers.handleGetFriends(request);
-      } else if (request.method == 'POST' && request.uri.path == '/closet/upload') {
-        await apiHandlers.handleClosetUpload(request);
-      } else if (request.method == 'PATCH' && request.uri.path.contains('/closet/') && request.uri.path.endsWith('/public')) {
-        await apiHandlers.handleClosetUpdatePublic(request);
-      } else if (request.method == 'PATCH' && request.uri.path.contains('/closet/') && !request.uri.path.endsWith('/public')) {
-        await apiHandlers.handleClosetUpdateDetails(request);
-      } else if (request.method == 'DELETE' && request.uri.path.startsWith('/closet/')) {
-        await apiHandlers.handleClosetDelete(request);
-      } else if (request.method == 'GET' && request.uri.path == '/closet') {
-        await apiHandlers.handleGetCloset(request);
-      } else if (request.method == 'GET' && request.uri.path == '/outfits') {
-        await apiHandlers.handleGetOutfits(request);
-      } else if (request.method == 'GET' && request.uri.path.startsWith('/images/')) {
-        await apiHandlers.handleServeImage(request);
-      } else {
-        request.response
-          ..statusCode = HttpStatus.notFound
-          ..write('Not Found')
-          ..close();
-      }
-    } catch (e) {
-      print('Unhandled exception: $e');
-      if (request.response.statusCode == HttpStatus.ok) {
-         request.response.statusCode = HttpStatus.internalServerError;
-      }
-      request.response.close();
-    }
+  // CORS Middleware
+  Middleware corsHeaders() {
+    return (innerHandler) {
+      return (request) async {
+        if (request.method == 'OPTIONS') {
+          return Response.ok('', headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PATCH, DELETE',
+            'Access-Control-Allow-Headers': 'Content-Type',
+          });
+        }
+        final response = await innerHandler(request);
+        return response.change(headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PATCH, DELETE',
+          'Access-Control-Allow-Headers': 'Content-Type',
+        });
+      };
+    };
   }
+
+  Middleware logRequests() {
+    return (innerHandler) {
+      return (request) async {
+        print('Request: ${request.method} ${request.url}');
+        return innerHandler(request);
+      };
+    };
+  }
+
+  // Routes
+  app.post('/signup', (Request request) => _handleRequest(request, apiHandlers.handleSignup));
+  app.post('/login', (Request request) => _handleRequest(request, apiHandlers.handleLogin));
+  app.get('/users/search', (Request request) => _handleRequest(request, apiHandlers.handleSearchUsers));
+  app.post('/friends/request', (Request request) => _handleRequest(request, apiHandlers.handleSendFriendRequest));
+  app.patch('/friends/request/<friendshipId>', (Request request) => _handleRequest(request, apiHandlers.handleUpdateFriendRequest));
+  app.get('/friends/pending', (Request request) => _handleRequest(request, apiHandlers.handleGetPendingFriendRequests));
+  app.get('/friends', (Request request) => _handleRequest(request, apiHandlers.handleGetFriends));
+  app.post('/closet/upload', (Request request) => _handleRequest(request, apiHandlers.handleClosetUpload));
+  app.patch('/closet/<itemId>/public', (Request request) => _handleRequest(request, apiHandlers.handleClosetUpdatePublic));
+  app.patch('/closet/<itemId>', (Request request) => _handleRequest(request, apiHandlers.handleClosetUpdateDetails));
+  app.delete('/closet/<itemId>', (Request request) => _handleRequest(request, apiHandlers.handleClosetDelete));
+  app.get('/closet', (Request request) => _handleRequest(request, apiHandlers.handleGetCloset));
+  app.get('/outfits', (Request request) => _handleRequest(request, apiHandlers.handleGetOutfits));
+  app.get('/images/<filename>', (Request request) => _handleRequest(request, apiHandlers.handleServeImage));
+
+  final handler = Pipeline()
+      .addMiddleware(logRequests())
+      .addMiddleware(corsHeaders())
+      .addHandler(app.call);
+
+  final server = await io.serve(handler, InternetAddress.anyIPv4, 8080);
+  print('Server running on http://${server.address.address}:${server.port}/');
+}
+
+// Adapter to adapt ApiHandlers methods (which take HttpRequest) to Shelf Request/Response
+// But ApiHandlers methods currently return Future<void> and write directly to HttpRequest.response.
+// We need to change ApiHandlers to return Response, OR wrap them.
+// Since refactoring ApiHandlers is a bigger task, we can wrap the Shelf Request into an adapter if needed,
+// OR (better) Refactor ApiHandlers to use Shelf Request/Response.
+// Given constraints, I should Refactor ApiHandlers to return Shelf Response.
+
+// Wait, I can't easily change ApiHandlers signature without breaking everything.
+// But wait, the original code passed `HttpRequest` (dart:io) to `handleSignup`.
+// Shelf Request is DIFFERENT from dart:io HttpRequest.
+// So I MUST refactor ApiHandlers to use Shelf Request/Response if I use Shelf Router.
+// Otherwise I can't use Shelf Router easily.
+
+// Let's modify ApiHandlers to accept shelf.Request and return Future<shelf.Response>.
+// This is cleaner anyway.
+
+Future<Response> _handleRequest(Request request, Future<Response> Function(Request) handler) async {
+    try {
+        return await handler(request);
+    } catch (e) {
+        print('Error handling request: $e');
+        return Response.internalServerError(body: 'Internal Server Error: $e');
+    }
 }
