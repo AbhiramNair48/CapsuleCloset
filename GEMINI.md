@@ -136,3 +136,20 @@ The application follows a layered architecture:
 *   **Testing:**
     *   Verified **22 passing tests** total (all frontend tests green, including previously failing AI chat tests).
     *   Added backend sanity test.
+
+## Refactor Log (January 23, 2026)
+*   **Deprecation Fixes:** Removed deprecated `isInDebugMode` in `BackgroundService`.
+*   **Dependency Updates:** Upgraded all packages to latest minor/patch versions.
+*   **Refactoring - App:**
+    *   Extracted `ChatBubble`, `OutfitPreview`, and `WeatherModule` from `AIChatPage` to `lib/widgets`.
+    *   Extracted `ImageSelectionDrawerContent` from `UploadToClosetPage` to `lib/widgets`.
+    *   Cleaned up `UploadToClosetPage` logic.
+    *   Fixed hardcoded URL in `AppConstants` (added `http://`).
+*   **Refactoring - Backend:**
+    *   Refactored `backend/bin/server.dart` to use `shelf_router` for cleaner routing.
+    *   Refactored `backend/lib/api_handlers.dart` to use `shelf.Request` and `shelf.Response`.
+    *   Added explicit dependency on `http_parser`.
+*   **Testing:**
+    *   Refactored `DataService` to use Dependency Injection for `http.Client`.
+    *   Fixed and unskipped `DataService Removes clothing item` test using `MockClient`.
+    *   Verified all tests pass (22 passing in App, 1 passing in Backend).
