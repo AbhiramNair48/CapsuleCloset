@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:capsule_closet_app/services/auth_service.dart';
 import '../widgets/delete_icon_button.dart';
+import '../widgets/image_selection_drawer_content.dart';
 
 class UploadToClosetPage extends StatefulWidget {
   const UploadToClosetPage({super.key});
@@ -52,116 +53,16 @@ class _UploadToClosetPageState extends State<UploadToClosetPage> {
           maxChildSize: 0.9,
           expand: false,
           builder: (BuildContext context, ScrollController scrollController) {
-            // Create a local copy of the images to work with in the drawer
-            List<XFile> drawerImages = List.from(_selectedImages);
-            
-            return StatefulBuilder(
-              builder: (BuildContext context, StateSetter setDrawerState) {
-                return Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).cardColor,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(24),
-                      topRight: Radius.circular(24),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, -3),
-                      ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      children: [
-                        Container(
-                          width: 40,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[300],
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Selected Items (${drawerImages.length})',
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                              },
-                              child: const Text('Done'),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Expanded(
-                          child: GridView.builder(
-                            controller: scrollController,
-                            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                              maxCrossAxisExtent: 120,
-                              mainAxisSpacing: 12,
-                              crossAxisSpacing: 12,
-                              childAspectRatio: 1,
-                            ),
-                            itemCount: drawerImages.length, // Show all images
-                            itemBuilder: (context, index) {
-                              // Make sure index is within bounds in case the list changed
-                              if (index >= drawerImages.length) {
-                                return Container(); // Return empty container if index out of bounds
-                              }
-                              
-                              return Card(
-                                clipBehavior: Clip.antiAlias,
-                                child: Stack(
-                                  fit: StackFit.expand, // Ensure the stack fills the container
-                                  children: [
-                                    // The image
-                                    Image.file(
-                                      File(drawerImages[index].path),
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return const Icon(
-                                          Icons.broken_image,
-                                          size: 30,
-                                          color: Colors.grey,
-                                        );
-                                      },
-                                    ),
-                                    // Top-right positioned delete button - sits directly on the image
-                                    Positioned(
-                                      top: 6,
-                                      right: 6,
-                                      child: DeleteIconButton(
-                                        onTap: () {
-                                          // Remove from both the local list and the main list
-                                          setDrawerState(() {
-                                            drawerImages.removeAt(index);
-                                          });
-                                          
-                                          setState(() {
-                                            _selectedImages.removeAt(index);
-                                          });
-                                        },
-                                        iconSize: 16,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
+            return ImageSelectionDrawerContent(
+              images: _selectedImages,
+              scrollController: scrollController,
+              onRemove: (index) {
+                setState(() {
+                  _selectedImages.removeAt(index);
+                });
+              },
+              onDone: () {
+                Navigator.of(context).pop();
               },
             );
           },
