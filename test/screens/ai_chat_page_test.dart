@@ -194,6 +194,9 @@ class MockDataService extends ChangeNotifier implements DataService {
 
   @override
   Future<void> saveNotificationSettings(bool isEnabled, String? time, String? occasion) async {}
+
+  @override
+  Future<String?> uploadProfilePicture(XFile imageFile) async => null;
 }
 
 

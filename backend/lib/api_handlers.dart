@@ -65,7 +65,7 @@ class ApiHandlers {
       }
 
       final result = await pool.execute(
-        'SELECT id, email, username, password_hash, gender, favorite_style FROM users WHERE email = :email LIMIT 1',
+        'SELECT id, email, username, password_hash, gender, favorite_style, profile_pic_url FROM users WHERE email = :email LIMIT 1',
         {"email": email},
       );
 
@@ -84,6 +84,7 @@ class ApiHandlers {
           'email': row.colByName('email'),
           'gender': row.colByName('gender'),
           'favorite_style': row.colByName('favorite_style'),
+          'profile_pic_url': row.colByName('profile_pic_url'),
         };
         return Response.ok(
           jsonEncode({'message': 'Successful login!', 'user': user}),
@@ -106,7 +107,7 @@ class ApiHandlers {
 
     try {
       final results = await pool.execute(
-        'SELECT id, username, favorite_style FROM users WHERE username LIKE :query',
+        'SELECT id, username, favorite_style, profile_pic_url FROM users WHERE username LIKE :query',
         {"query": "%$query%"},
       );
 
@@ -114,6 +115,7 @@ class ApiHandlers {
         'id': row.colByName('id'),
         'username': row.colByName('username'),
         'favorite_style': row.colByName('favorite_style'),
+        'profile_pic_url': row.colByName('profile_pic_url'),
       }).toList();
 
       return Response.ok(
@@ -135,17 +137,19 @@ class ApiHandlers {
       final username = data['username'];
       final gender = data['gender'];
       final favoriteStyle = data['favorite_style'];
+      final profilePicUrl = data['profile_pic_url'];
 
       if (userId == null) {
         return Response.badRequest(body: 'Missing user ID');
       }
 
       await pool.execute(
-        'UPDATE users SET username = :username, gender = :gender, favorite_style = :favorite_style WHERE id = :id',
+        'UPDATE users SET username = :username, gender = :gender, favorite_style = :favorite_style, profile_pic_url = :profile_pic_url WHERE id = :id',
         {
           "username": username,
           "gender": gender,
           "favorite_style": favoriteStyle,
+          "profile_pic_url": profilePicUrl,
           "id": userId,
         },
       );
@@ -240,7 +244,7 @@ class ApiHandlers {
 
     try {
       final results = await pool.execute(
-        "SELECT f.user_id as sender_id, u.username as sender_username, u.email as sender_email, f.friend_id as receiver_id FROM friendships f JOIN users u ON f.user_id = u.id WHERE f.friend_id = :user_id AND f.status = 'pending'",
+        "SELECT f.user_id as sender_id, u.username as sender_username, u.email as sender_email, u.profile_pic_url as sender_profile_pic, f.friend_id as receiver_id FROM friendships f JOIN users u ON f.user_id = u.id WHERE f.friend_id = :user_id AND f.status = 'pending'",
         {'user_id': userId},
       );
 
@@ -249,6 +253,7 @@ class ApiHandlers {
         'senderId': row.colByName('sender_id').toString(),
         'senderUsername': row.colByName('sender_username'),
         'senderEmail': row.colByName('sender_email'),
+        'profilePicUrl': row.colByName('sender_profile_pic'),
       }).toList();
 
       return Response.ok(
@@ -293,7 +298,7 @@ class ApiHandlers {
       }
 
       final friendsResult = await pool.execute(
-        'SELECT id, username FROM users WHERE id IN (${friendIds.join(',')})',
+        'SELECT id, username, profile_pic_url FROM users WHERE id IN (${friendIds.join(',')})',
       );
 
       final itemsResult = await pool.execute(
@@ -333,6 +338,7 @@ class ApiHandlers {
         return {
           'id': friendId,
           'name': row.colByName('username'),
+          'profilePicUrl': row.colByName('profile_pic_url'),
           'previewItems': previewItems,
           'closetItems': allItems,
         };

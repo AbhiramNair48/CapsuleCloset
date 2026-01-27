@@ -4,6 +4,9 @@ import 'package:provider/provider.dart';
 import '../models/user_profile.dart';
 import '../services/data_service.dart';
 
+import 'package:image_picker/image_picker.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
@@ -20,6 +23,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _isDailyNotificationEnabled = false;
   TimeOfDay _notificationTime = const TimeOfDay(hour: 8, minute: 0);
   String _notificationOccasion = 'Casual';
+  bool _isUploading = false;
   
   final List<String> _occasions = ['Casual', 'Work', 'Party', 'Date', 'Gym', 'School'];
 
@@ -43,6 +47,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _pickImage() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+    
+    if (!mounted) return;
+
+    if (image != null) {
+      setState(() => _isUploading = true);
+      
+      final dataService = context.read<DataService>();
+      final url = await dataService.uploadProfilePicture(image);
+      
+      if (!mounted) return;
+
+      setState(() => _isUploading = false);
+      
+      if (url != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile picture updated!')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to update profile picture')),
+        );
+      }
+    }
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -53,10 +85,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _saveProfile() async {
     if (_formKey.currentState!.validate()) {
+      final currentProfile = context.read<DataService>().userProfile;
       final newProfile = UserProfile(
         name: _nameController.text,
         gender: _genderController.text,
         favoriteStyle: _styleController.text,
+        profilePicUrl: currentProfile.profilePicUrl, // Preserve current URL
         isDailyNotificationEnabled: _isDailyNotificationEnabled,
         notificationTime: '${_notificationTime.hour}:${_notificationTime.minute.toString().padLeft(2, '0')}',
         notificationOccasion: _notificationOccasion,
@@ -71,12 +105,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _notificationOccasion,
       );
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile and settings saved successfully')),
-        );
-        Navigator.pop(context);
-      }
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profile and settings saved successfully')),
+      );
+      Navigator.pop(context);
     }
   }
 
@@ -94,6 +128,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final userProfile = context.watch<DataService>().userProfile;
+    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Profile'),
@@ -105,6 +142,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Center(
+                child: Stack(
+                  children: [
+                    CircleAvatar(
+                      radius: 60,
+                      backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                      backgroundImage: userProfile.profilePicUrl != null
+                          ? CachedNetworkImageProvider(userProfile.profilePicUrl!)
+                          : null,
+                      child: _isUploading
+                          ? const CircularProgressIndicator()
+                          : userProfile.profilePicUrl == null
+                              ? Icon(Icons.person, size: 60, color: theme.colorScheme.onSurfaceVariant)
+                              : null,
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: CircleAvatar(
+                        backgroundColor: theme.colorScheme.primary,
+                        radius: 18,
+                        child: IconButton(
+                          icon: const Icon(Icons.camera_alt, size: 18, color: Colors.white),
+                          onPressed: _pickImage,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
               Text(
                 'Tell us about yourself so your AI Stylist can give better recommendations.',
                 style: Theme.of(context).textTheme.bodyMedium,

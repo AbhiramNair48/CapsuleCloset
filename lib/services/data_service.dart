@@ -103,9 +103,30 @@ class DataService extends ChangeNotifier {
         name: user['username']?.toString() ?? '',
         gender: user['gender']?.toString() ?? '',
         favoriteStyle: user['favorite_style']?.toString() ?? '',
+        profilePicUrl: user['profile_pic_url']?.toString(),
       );
       notifyListeners();
     }
+  }
+
+  /// Uploads a profile picture
+  Future<String?> uploadProfilePicture(XFile imageFile) async {
+     try {
+      final downloadUrl = await _storageService.uploadImage(File(imageFile.path), folder: 'profile');
+      if (downloadUrl != null) {
+        // Update local state immediately
+        _userProfile = _userProfile.copyWith(profilePicUrl: downloadUrl);
+        notifyListeners();
+        
+        // Update backend
+        await updateUserProfile(_userProfile);
+        return downloadUrl;
+      }
+      return null;
+     } catch (e) {
+       if (kDebugMode) print('Error uploading profile picture: $e');
+       return null;
+     }
   }
 
   /// Caches the current clothing items to SharedPreferences
@@ -507,6 +528,7 @@ class DataService extends ChangeNotifier {
           'username': profile.name,
           'gender': profile.gender,
           'favorite_style': profile.favoriteStyle,
+          'profile_pic_url': profile.profilePicUrl,
         }),
       );
     } catch (e) {

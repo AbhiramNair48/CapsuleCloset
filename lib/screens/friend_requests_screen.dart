@@ -4,6 +4,8 @@ import '../services/data_service.dart';
 import '../models/pending_friend_request.dart';
 import '../services/auth_service.dart';
 
+import 'package:cached_network_image/cached_network_image.dart';
+
 class FriendRequestsScreen extends StatefulWidget {
   const FriendRequestsScreen({super.key});
 
@@ -73,6 +75,15 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
               return Card(
                 margin: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
                 child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                    backgroundImage: request.profilePicUrl != null
+                        ? CachedNetworkImageProvider(request.profilePicUrl!)
+                        : null,
+                    child: request.profilePicUrl == null
+                        ? const Icon(Icons.person)
+                        : null,
+                  ),
                   title: Text(request.senderUsername),
                   subtitle: Text('Sent you a friend request (${request.senderEmail})'),
                   trailing: Row(

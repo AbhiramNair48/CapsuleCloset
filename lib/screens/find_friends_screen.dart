@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../services/data_service.dart';
 import '../services/auth_service.dart';
 
+import 'package:cached_network_image/cached_network_image.dart';
+
 class FindFriendsScreen extends StatefulWidget {
   const FindFriendsScreen({super.key});
 
@@ -131,6 +133,15 @@ class _FindFriendsScreenState extends State<FindFriendsScreen> {
                   return Card(
                     margin: const EdgeInsets.symmetric(vertical: 8.0),
                     child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                        backgroundImage: user['profile_pic_url'] != null
+                            ? CachedNetworkImageProvider(user['profile_pic_url'])
+                            : null,
+                        child: user['profile_pic_url'] == null
+                            ? const Icon(Icons.person)
+                            : null,
+                      ),
                       title: Text(user['username']),
                       subtitle: Text(user['favorite_style'] ?? 'N/A'),
                       trailing: ElevatedButton(
