@@ -5,11 +5,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'dart:io';
 
 class MockStorageService extends StorageService {
   @override
   Future<void> deleteImage(String imageUrl) async {
+    // Do nothing for mock
+  }
+
+  @override
+  Future<void> updateImageMetadata(String imageUrl, bool isPublic) async {
     // Do nothing for mock
   }
 }

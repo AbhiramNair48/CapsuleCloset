@@ -458,8 +458,14 @@ class DataService extends ChangeNotifier {
         // Update local state
         final index = _clothingItems.indexWhere((item) => item.id == itemId);
         if (index != -1) {
-          _clothingItems[index] = _clothingItems[index].copyWith(isPublic: isPublic);
+          final item = _clothingItems[index];
+          _clothingItems[index] = item.copyWith(isPublic: isPublic);
           notifyListeners();
+
+          // Update Firebase metadata if image is on Firebase
+          if (item.imagePath.startsWith('http') && !item.imagePath.contains('10.0.2.2')) {
+             await _storageService.updateImageMetadata(item.imagePath, isPublic);
+          }
         }
       } else {
         // Handle error, maybe show a snackbar or log it

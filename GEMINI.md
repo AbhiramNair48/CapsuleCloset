@@ -160,6 +160,8 @@ The application follows a layered architecture:
     *   Added `HamperScreen` (`lib/screens/hamper_screen.dart`) for managing dirty/clean clothes.
     *   Added `TypingText` widget (`lib/widgets/typing_text.dart`) for chat animations.
     *   Integrated Hamper navigation in `ClothesTabScreen`.
+    *   **Unread Friend Request Count:** Added a badge to the friend requests icon in `FriendsPage` to show the number of pending requests.
+    *   **Public Clothing Access:** Implemented logic to update Firebase Storage metadata (`public: true`) when a user marks a clothing item as public, ensuring friends can access the image.
 *   **Backend:**
     *   Finalized `backend/lib/api_handlers.dart` using `shelf` (Request/Response).
     *   Moved `migrate_hamper.dart` to `backend/scripts/` to keep `bin/` clean.

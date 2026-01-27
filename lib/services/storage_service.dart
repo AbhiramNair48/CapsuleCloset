@@ -99,4 +99,17 @@ class StorageService {
       return file; // Fallback to original if compression fails
     }
   }
+
+  /// Update image metadata (e.g., public status)
+  Future<void> updateImageMetadata(String imageUrl, bool isPublic) async {
+    try {
+      final ref = _storage.refFromURL(imageUrl);
+      await ref.updateMetadata(SettableMetadata(
+        customMetadata: {'public': isPublic.toString()},
+      ));
+      if (kDebugMode) print('Updated metadata for $imageUrl: public=$isPublic');
+    } catch (e) {
+      if (kDebugMode) print('Error updating metadata: $e');
+    }
+  }
 }
