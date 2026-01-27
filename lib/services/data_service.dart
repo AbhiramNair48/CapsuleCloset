@@ -20,7 +20,7 @@ import 'package:capsule_closet_app/services/background_service.dart';
 /// Service class to manage all application data
 class DataService extends ChangeNotifier {
   AuthService? _authService;
-  final StorageService _storageService = StorageService();
+  final StorageService _storageService;
   final http.Client _client;
   final _itemChangeController = StreamController<void>.broadcast();
 
@@ -41,8 +41,9 @@ class DataService extends ChangeNotifier {
   List<PendingFriendRequest> get pendingFriendRequests => _pendingFriendRequests;
   UserProfile get userProfile => _userProfile;
 
-  DataService(this._authService, {http.Client? httpClient}) 
-      : _client = httpClient ?? http.Client() {
+  DataService(this._authService, {http.Client? httpClient, StorageService? storageService}) 
+      : _client = httpClient ?? http.Client(),
+        _storageService = storageService ?? StorageService() {
     _authService?.addListener(_onAuthStateChanged);
     _initializeData();
   }
