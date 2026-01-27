@@ -1,16 +1,27 @@
 import 'package:capsule_closet_app/models/clothing_item.dart';
 import 'package:capsule_closet_app/services/data_service.dart';
+import 'package:capsule_closet_app/services/storage_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'dart:io';
+
+class MockStorageService extends StorageService {
+  @override
+  Future<void> deleteImage(String imageUrl) async {
+    // Do nothing for mock
+  }
+}
 
 void main() {
   late DataService dataService;
   late MockClient mockClient;
+  late MockStorageService mockStorageService;
 
   setUp(() {
     SharedPreferences.setMockInitialValues({});
+    mockStorageService = MockStorageService();
     
     mockClient = MockClient((request) async {
       // Mock DELETE clothing item
@@ -20,7 +31,7 @@ void main() {
       return http.Response('', 404);
     });
 
-    dataService = DataService(null, httpClient: mockClient);
+    dataService = DataService(null, httpClient: mockClient, storageService: mockStorageService);
   });
 
   group('DataService', () {

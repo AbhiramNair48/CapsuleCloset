@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/outfit.dart';
 
-/// Widget for displaying an outfit card with a collage of clothing items
-class OutfitCard extends StatelessWidget {
+/// Widget for displaying an outfit card with a collage of clothing items and smooth entry animation
+class OutfitCard extends StatefulWidget {
   final Outfit outfit;
   final VoidCallback onTap;
 
@@ -13,47 +13,92 @@ class OutfitCard extends StatelessWidget {
     required this.onTap,
   });
 
+  @override
+  State<OutfitCard> createState() => _OutfitCardState();
+}
+
+class _OutfitCardState extends State<OutfitCard> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
+    );
+
+    _fadeAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeIn,
+    );
+
+    _scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+    );
+
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
   static const double _imageSpacing = 2.0;
   static const double _errorIconSize = 30.0;
   static const int _maxItemsInCollage = 4;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: _buildCollage(),
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Card(
+          elevation: 3,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: widget.onTap,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: _buildCollage(),
+                ),
+                Container(
+                  color: Theme.of(context).colorScheme.surface,
+                  padding: const EdgeInsets.all(10.0),
+                  child: Text(
+                    widget.outfit.name,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
-            Container(
-              color: Theme.of(context).colorScheme.surface,
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                outfit.name,
-                style: Theme.of(context).textTheme.labelLarge,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildCollage() {
-    final items = outfit.items;
+    final items = widget.outfit.items;
     final itemCount = items.length;
     final displayCount = itemCount > _maxItemsInCollage ? _maxItemsInCollage : itemCount;
 
     if (displayCount == 0) {
       return Container(
-        color: Colors.grey.shade200,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         child: const Center(
           child: Icon(Icons.image_not_supported, size: _errorIconSize),
         ),
@@ -68,7 +113,7 @@ class OutfitCard extends StatelessWidget {
       return Row(
         children: [
           Expanded(child: _buildImage(items[0].imagePath)),
-          SizedBox(width: _imageSpacing),
+          const SizedBox(width: _imageSpacing),
           Expanded(child: _buildImage(items[1].imagePath)),
         ],
       );
@@ -82,12 +127,12 @@ class OutfitCard extends StatelessWidget {
             child: Row(
               children: [
                 Expanded(child: _buildImage(items[0].imagePath)),
-                SizedBox(width: _imageSpacing),
+                const SizedBox(width: _imageSpacing),
                 Expanded(child: _buildImage(items[1].imagePath)),
               ],
             ),
           ),
-          SizedBox(height: _imageSpacing),
+          const SizedBox(height: _imageSpacing),
           Expanded(
             child: _buildImage(items[2].imagePath),
           ),
@@ -102,12 +147,12 @@ class OutfitCard extends StatelessWidget {
           child: Row(
             children: [
               Expanded(child: _buildImage(items[0].imagePath)),
-              SizedBox(width: _imageSpacing),
+              const SizedBox(width: _imageSpacing),
               Expanded(child: _buildImage(items[1].imagePath)),
             ],
           ),
         ),
-        SizedBox(height: _imageSpacing),
+        const SizedBox(height: _imageSpacing),
         Expanded(
           child: Row(
             children: [
@@ -124,7 +169,7 @@ class OutfitCard extends StatelessWidget {
                             '+${itemCount - _maxItemsInCollage}',
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 20,
+                              fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -133,7 +178,7 @@ class OutfitCard extends StatelessWidget {
                   ],
                 ),
               ),
-              SizedBox(width: _imageSpacing),
+              const SizedBox(width: _imageSpacing),
               Expanded(child: _buildImage(items[3].imagePath)),
             ],
           ),
@@ -146,23 +191,21 @@ class OutfitCard extends StatelessWidget {
     return CachedNetworkImage(
       imageUrl: imagePath,
       fit: BoxFit.cover,
-      memCacheWidth: 200, // Cache width for better performance
-      memCacheHeight: 200, // Cache height for better performance
+      memCacheWidth: 200,
+      memCacheHeight: 200,
       placeholder: (context, url) => Container(
-        color: Colors.grey[200],
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
         child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
       ),
       errorWidget: (context, url, error) {
         return Container(
-          color: Colors.grey[300],
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           child: const Icon(
             Icons.image_not_supported,
             size: _errorIconSize,
-            color: Colors.grey,
           ),
         );
       },
     );
   }
 }
-

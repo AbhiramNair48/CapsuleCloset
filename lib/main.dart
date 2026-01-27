@@ -45,7 +45,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProxyProvider<AuthService, DataService>(
           create: (context) => DataService(null),
-          update: (context, auth, previous) => DataService(auth),
+          update: (context, auth, previous) => previous!..updateAuth(auth),
         ),
         ChangeNotifierProvider(create: (_) => AIService()),
         ChangeNotifierProvider(create: (_) => ThemeService()),

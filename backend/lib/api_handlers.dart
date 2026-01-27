@@ -65,7 +65,7 @@ class ApiHandlers {
       }
 
       final result = await pool.execute(
-        'SELECT id, email, username, password_hash FROM users WHERE email = :email LIMIT 1',
+        'SELECT id, email, username, password_hash, gender, favorite_style FROM users WHERE email = :email LIMIT 1',
         {"email": email},
       );
 
@@ -82,6 +82,8 @@ class ApiHandlers {
           'id': row.colByName('id'),
           'username': row.colByName('username'),
           'email': row.colByName('email'),
+          'gender': row.colByName('gender'),
+          'favorite_style': row.colByName('favorite_style'),
         };
         return Response.ok(
           jsonEncode({'message': 'Successful login!', 'user': user}),
@@ -121,6 +123,37 @@ class ApiHandlers {
     } catch (e) {
       print('Error searching users: $e');
       return Response.internalServerError(body: 'Error searching users');
+    }
+  }
+
+  Future<Response> handleUpdateProfile(Request request) async {
+    try {
+      final content = await request.readAsString();
+      final data = jsonDecode(content) as Map<String, dynamic>;
+
+      final userId = data['id'];
+      final username = data['username'];
+      final gender = data['gender'];
+      final favoriteStyle = data['favorite_style'];
+
+      if (userId == null) {
+        return Response.badRequest(body: 'Missing user ID');
+      }
+
+      await pool.execute(
+        'UPDATE users SET username = :username, gender = :gender, favorite_style = :favorite_style WHERE id = :id',
+        {
+          "username": username,
+          "gender": gender,
+          "favorite_style": favoriteStyle,
+          "id": userId,
+        },
+      );
+
+      return Response.ok('Profile updated successfully');
+    } catch (e) {
+      print('Error updating profile: $e');
+      return Response.internalServerError(body: 'Error updating profile: $e');
     }
   }
 
@@ -330,7 +363,7 @@ class ApiHandlers {
       String? savedFilename;
       final itemData = <String, String>{};
       final transformer = MimeMultipartTransformer(boundary);
-      final stream = request.read().transform(transformer);
+      final stream = request.read().cast<List<int>>().transform(transformer);
 
       await for (final part in stream) {
         final contentDisposition = part.headers['content-disposition'];
@@ -455,6 +488,9 @@ class ApiHandlers {
       if (data.containsKey('description')) {
         updates['description'] = data['description'];
       }
+      if (data.containsKey('isClean')) {
+        updates['is_clean'] = (data['isClean'] == true) ? 1 : 0;
+      }
 
       if (updates.isEmpty) {
         return Response.badRequest(body: 'No fields to update');
@@ -500,7 +536,7 @@ class ApiHandlers {
 
     try {
       final results = await pool.execute(
-        'SELECT id, img_link, clothing_type, material, color, style, description, public FROM closet WHERE user_id = :user_id',
+        'SELECT id, img_link, clothing_type, material, color, style, description, public, is_clean FROM closet WHERE user_id = :user_id',
         {'user_id': userId},
       );
 
@@ -512,6 +548,10 @@ class ApiHandlers {
                 ? 'http://10.0.2.2:8080/images/$imgLink'
                 : '';
 
+        // Safe access for is_clean in case column doesn't exist yet (though query would fail)
+        // If query fails, we land in catch block.
+        // If we migrate properly, it exists.
+        
         return {
           'id': row.colByName('id').toString(),
           'imagePath': imagePath,
@@ -521,6 +561,7 @@ class ApiHandlers {
           'style': row.colByName('style'),
           'description': row.colByName('description'),
           'public': row.colByName('public') == '1',
+          'isClean': row.colByName('is_clean') == '1',
         };
       }).toList();
 

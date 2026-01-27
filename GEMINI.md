@@ -67,6 +67,7 @@ The application follows a layered architecture:
     *   `theme/`: Theme definitions.
 *   `backend/`: Server-side code (Dart/Shelf).
     *   `bin/`: Server entry point (`server.dart`).
+    *   `scripts/`: Utility scripts (e.g., database migrations).
 *   `assets/`: Static assets (images, icons).
 *   `test/`: Unit and widget tests.
     *   `screens/`: Widget tests for screens.
@@ -153,3 +154,17 @@ The application follows a layered architecture:
     *   Refactored `DataService` to use Dependency Injection for `http.Client`.
     *   Fixed and unskipped `DataService Removes clothing item` test using `MockClient`.
     *   Verified all tests pass (22 passing in App, 1 passing in Backend).
+
+## Refactor Log (January 26, 2026)
+*   **Features:**
+    *   Added `HamperScreen` (`lib/screens/hamper_screen.dart`) for managing dirty/clean clothes.
+    *   Added `TypingText` widget (`lib/widgets/typing_text.dart`) for chat animations.
+    *   Integrated Hamper navigation in `ClothesTabScreen`.
+*   **Backend:**
+    *   Finalized `backend/lib/api_handlers.dart` using `shelf` (Request/Response).
+    *   Moved `migrate_hamper.dart` to `backend/scripts/` to keep `bin/` clean.
+*   **Refactoring:**
+    *   Refactored `DataService` to support Dependency Injection for `StorageService`.
+    *   Updated `test/services/data_service_test.dart` to mock `StorageService`, fixing test failures related to Firebase.
+*   **Testing:**
+    *   Verified **22 passing tests** (App) and **1 passing test** (Backend).

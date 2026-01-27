@@ -69,6 +69,7 @@ Future<void> main() async {
   app.post('/signup', (Request request) => _handleRequest(request, apiHandlers.handleSignup));
   app.post('/login', (Request request) => _handleRequest(request, apiHandlers.handleLogin));
   app.get('/users/search', (Request request) => _handleRequest(request, apiHandlers.handleSearchUsers));
+  app.post('/users/profile', (Request request) => _handleRequest(request, apiHandlers.handleUpdateProfile));
   app.post('/friends/request', (Request request) => _handleRequest(request, apiHandlers.handleSendFriendRequest));
   app.patch('/friends/request/<friendshipId>', (Request request) => _handleRequest(request, apiHandlers.handleUpdateFriendRequest));
   app.get('/friends/pending', (Request request) => _handleRequest(request, apiHandlers.handleGetPendingFriendRequests));

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'package:capsule_closet_app/config/app_constants.dart';
 import 'package:capsule_closet_app/services/auth_service.dart';
 import 'package:flutter/foundation.dart';
@@ -18,9 +19,12 @@ import 'package:capsule_closet_app/services/background_service.dart';
 
 /// Service class to manage all application data
 class DataService extends ChangeNotifier {
-  final AuthService? _authService;
-  final StorageService _storageService = StorageService();
+  AuthService? _authService;
+  final StorageService _storageService;
   final http.Client _client;
+  final _itemChangeController = StreamController<void>.broadcast();
+
+  Stream<void> get itemChangeStream => _itemChangeController.stream;
 
   List<ClothingItem> _clothingItems = [];
   List<Outfit> _outfits = [];
@@ -33,28 +37,41 @@ class DataService extends ChangeNotifier {
   List<Outfit> get outfits => _outfits;
   List<Friend> get friends => _friends;
   List<ClothingItem> get filteredClothingItems => _filteredClothingItems;
+  List<ClothingItem> get hamperItems => _clothingItems.where((item) => !item.isClean).toList();
   List<PendingFriendRequest> get pendingFriendRequests => _pendingFriendRequests;
   UserProfile get userProfile => _userProfile;
 
-  DataService(this._authService, {http.Client? httpClient}) 
-      : _client = httpClient ?? http.Client() {
+  DataService(this._authService, {http.Client? httpClient, StorageService? storageService}) 
+      : _client = httpClient ?? http.Client(),
+        _storageService = storageService ?? StorageService() {
     _authService?.addListener(_onAuthStateChanged);
     _initializeData();
+  }
+
+  /// Update the auth service reference (used by ProxyProvider)
+  void updateAuth(AuthService auth) {
+    if (_authService == auth) return;
+    
+    _authService?.removeListener(_onAuthStateChanged);
+    _authService = auth;
+    _authService?.addListener(_onAuthStateChanged);
+    _onAuthStateChanged();
   }
 
   @override
   void dispose() {
     _authService?.removeListener(_onAuthStateChanged);
+    _itemChangeController.close();
     // Don't close client if injected? Or do? usually if we created it (default), we close it.
     // If injected, the caller owns it. 
-    // But for simplicity, we won't close it here as it might be reused or global.
-    // Actually, http.Client() creates a new client.
+    _client.close();
     super.dispose();
   }
 
   void _onAuthStateChanged() {
     if (_authService?.isAuthenticated == true && _authService?.currentUser != null) {
       final userId = _authService!.currentUser!['id'];
+      _updateProfileFromAuth();
       fetchClothingItems(userId.toString());
       fetchOutfits(userId.toString());
       fetchFriends(userId.toString());
@@ -70,11 +87,24 @@ class DataService extends ChangeNotifier {
     // Check if user is already authenticated on startup
     if (_authService?.isAuthenticated == true && _authService?.currentUser != null) {
       final userId = _authService!.currentUser!['id'];
+      _updateProfileFromAuth();
       fetchClothingItems(userId.toString());
       fetchOutfits(userId.toString());
       fetchFriends(userId.toString());
       fetchPendingFriendRequests(userId.toString());
       loadNotificationSettings(userId.toString());
+    }
+  }
+
+  void _updateProfileFromAuth() {
+    if (_authService?.currentUser != null) {
+      final user = _authService!.currentUser!;
+      _userProfile = _userProfile.copyWith(
+        name: user['username']?.toString() ?? '',
+        gender: user['gender']?.toString() ?? '',
+        favoriteStyle: user['favorite_style']?.toString() ?? '',
+      );
+      notifyListeners();
     }
   }
 
@@ -161,7 +191,7 @@ class DataService extends ChangeNotifier {
       if (response.statusCode == 200) {
         final List<dynamic> itemsJson = jsonDecode(response.body);
         _clothingItems = itemsJson.map((json) => ClothingItem.fromJson(json)).toList();
-        _filteredClothingItems = List.from(_clothingItems);
+        _filteredClothingItems = _clothingItems.where((item) => item.isClean).toList();
         // Cache the items for background use
         _cacheClothingItems(userId);
       } else {
@@ -454,15 +484,35 @@ class DataService extends ChangeNotifier {
   }
 
   /// Update user profile
-  void updateUserProfile(UserProfile profile) {
+  Future<void> updateUserProfile(UserProfile profile) async {
     _userProfile = profile;
     notifyListeners();
+
+    try {
+      final userId = _authService?.currentUser?['id'];
+      if (userId == null) return;
+
+      final url = Uri.parse('${AppConstants.baseUrl}/users/profile');
+      await _client.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'id': userId,
+          'username': profile.name,
+          'gender': profile.gender,
+          'favorite_style': profile.favoriteStyle,
+        }),
+      );
+    } catch (e) {
+      if (kDebugMode) print('Error updating profile on backend: $e');
+    }
   }
 
   /// Add a new clothing item
   void addClothingItem(ClothingItem item) {
     _clothingItems.add(item);
     _filteredClothingItems = List.from(_clothingItems);
+    _itemChangeController.add(null);
     notifyListeners();
   }
 
@@ -487,6 +537,7 @@ class DataService extends ChangeNotifier {
       if (response.statusCode == 200) {
         _clothingItems.removeWhere((item) => item.id == id);
         _filteredClothingItems = List.from(_clothingItems);
+        _itemChangeController.add(null);
         notifyListeners();
       } else {
         if (kDebugMode) {
@@ -532,10 +583,10 @@ class DataService extends ChangeNotifier {
   /// Filter clothing items by type
   void filterClothingItemsByType(String? type) {
     if (type == null || type.isEmpty) {
-      _filteredClothingItems = List.from(_clothingItems);
+      _filteredClothingItems = _clothingItems.where((item) => item.isClean).toList();
     } else {
       _filteredClothingItems = _clothingItems
-          .where((item) => item.type.toLowerCase().contains(type.toLowerCase()))
+          .where((item) => item.isClean && item.type.toLowerCase().contains(type.toLowerCase()))
           .toList();
     }
     notifyListeners();
@@ -575,6 +626,27 @@ class DataService extends ChangeNotifier {
   /// Get clothing items by material
   List<ClothingItem> getClothingItemsByMaterial(String material) {
     return _clothingItems.where((item) => item.material == material).toList();
+  }
+
+  Future<void> markItemDirty(String itemId) async {
+    final item = _clothingItems.firstWhere((element) => element.id == itemId, orElse: () => const ClothingItem(id: '', imagePath: '', type: '', material: '', color: '', style: '', description: ''));
+    if (item.id.isNotEmpty) {
+      await updateClothingItem(item.copyWith(isClean: false));
+    }
+  }
+
+  Future<void> markItemClean(String itemId) async {
+    final item = _clothingItems.firstWhere((element) => element.id == itemId, orElse: () => const ClothingItem(id: '', imagePath: '', type: '', material: '', color: '', style: '', description: ''));
+    if (item.id.isNotEmpty) {
+      await updateClothingItem(item.copyWith(isClean: true));
+    }
+  }
+
+  Future<void> markAllClean() async {
+    final dirtyItems = _clothingItems.where((item) => !item.isClean).toList();
+    for (var item in dirtyItems) {
+      await updateClothingItem(item.copyWith(isClean: true));
+    }
   }
 
   /// Remove a friend by ID
