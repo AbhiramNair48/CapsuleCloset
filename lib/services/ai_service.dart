@@ -11,12 +11,14 @@ class Message {
   final bool isUser;
   final List<String>? imagePaths;
   final List<String>? itemIds;
+  bool hasAnimated; // Track if the typing animation has already played
 
   Message({
     required this.text,
     required this.isUser,
     this.imagePaths,
     this.itemIds,
+    this.hasAnimated = false,
   });
 }
 
@@ -28,6 +30,14 @@ class AIService extends ChangeNotifier {
 
   List<Message> get messages => List.unmodifiable(_messages);
   bool get isLoading => _isLoading;
+
+  void markMessageAsAnimated(int index) {
+    if (index >= 0 && index < _messages.length) {
+      _messages[index].hasAnimated = true;
+      // We don't necessarily need to notifyListeners here as it might trigger a rebuild loop 
+      // during the animation itself, but it's safe if handled correctly in the UI.
+    }
+  }
 
   // Store closet items to map AI responses back to images
   List<ClothingItem> _closetItems = [];

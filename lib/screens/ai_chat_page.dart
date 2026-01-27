@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:capsule_closet_app/services/background_service.dart';
@@ -77,6 +78,7 @@ class _AIChatPageState extends State<AIChatPage> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController(); // Add ScrollController
   late AIService _aiService;
+  StreamSubscription? _itemSubscription;
 
   @override
   void initState() {
@@ -84,6 +86,15 @@ class _AIChatPageState extends State<AIChatPage> {
     // Initialize chat with closet context if it's the first load
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _aiService = context.read<AIService>();
+      final dataService = context.read<DataService>();
+
+      // Listen for changes in clothing items and reset chat to get fresh context
+      _itemSubscription = dataService.itemChangeStream.listen((_) {
+        if (mounted) {
+          _resetChat();
+        }
+      });
+
       // Listen for changes in messages and scroll to bottom
       _aiService.addListener(_scrollDown);
       _initializeChatWithWeather().then((_) => _checkForDailyOutfit());
@@ -130,7 +141,7 @@ class _AIChatPageState extends State<AIChatPage> {
     if (!mounted) return;
 
     _aiService.updateContext(
-      dataService.clothingItems,
+      dataService.clothingItems.where((item) => item.isClean).toList(),
       dataService.userProfile,
       weatherInfo: weatherString
     );
@@ -153,6 +164,7 @@ class _AIChatPageState extends State<AIChatPage> {
   @override
   void dispose() {
     _scrollController.dispose(); // Dispose controller to avoid memory leaks
+    _itemSubscription?.cancel();
     try {
       _aiService.removeListener(_scrollDown); // Remove listener
     } catch (e) {
@@ -223,6 +235,10 @@ class _AIChatPageState extends State<AIChatPage> {
                           ChatBubble(
                             message: message.text,
                             isUserMessage: message.isUser,
+                            shouldAnimate: !message.isUser && !message.hasAnimated,
+                            onAnimationComplete: () {
+                              aiService.markMessageAsAnimated(index);
+                            },
                           ),
                           // Show outfit images if this is a bot message with images
                           if (!message.isUser && message.imagePaths != null && message.imagePaths!.isNotEmpty)

@@ -1,4 +1,5 @@
 import 'package:capsule_closet_app/screens/ai_chat_page.dart';
+import 'dart:async';
 import 'package:capsule_closet_app/services/ai_service.dart';
 import 'package:capsule_closet_app/services/data_service.dart';
 import 'package:capsule_closet_app/services/weather_service.dart';
@@ -38,6 +39,13 @@ class MockAIService extends ChangeNotifier implements AIService {
   @override
   ({String cleanText, List<String> imagePaths, List<String> itemIds}) processResponse(String text) {
     return (cleanText: text, imagePaths: <String>[], itemIds: <String>[]);
+  }
+
+  @override
+  void markMessageAsAnimated(int index) {
+    if (index >= 0 && index < _messages.length) {
+      _messages[index].hasAnimated = true;
+    }
   }
 
   @override
@@ -88,6 +96,9 @@ class ManualMockWeatherService implements WeatherService {
 
 class MockDataService extends ChangeNotifier implements DataService {
   @override
+  Stream<void> get itemChangeStream => const Stream.empty();
+
+  @override
   List<ClothingItem> get clothingItems => [];
   @override
   List<Outfit> get outfits => [];
@@ -99,6 +110,9 @@ class MockDataService extends ChangeNotifier implements DataService {
   List<PendingFriendRequest> get pendingFriendRequests => [];
   @override
   UserProfile get userProfile => const UserProfile();
+
+  @override
+  void updateAuth(dynamic auth) {}
 
   @override
   void addClothingItem(ClothingItem item) {}
@@ -125,7 +139,7 @@ class MockDataService extends ChangeNotifier implements DataService {
   void removeFriend(String id) {}
   
   @override
-  void updateUserProfile(UserProfile profile) {}
+  Future<void> updateUserProfile(UserProfile profile) async {}
 
   @override
   List<ClothingItem> getClothingItemsByType(String type) => [];
@@ -135,6 +149,18 @@ class MockDataService extends ChangeNotifier implements DataService {
   
   @override
   List<ClothingItem> getClothingItemsByMaterial(String material) => [];
+
+  @override
+  List<ClothingItem> get hamperItems => [];
+
+  @override
+  Future<void> markItemClean(String itemId) async {}
+
+  @override
+  Future<void> markItemDirty(String itemId) async {}
+
+  @override
+  Future<void> markAllClean() async {}
 
   @override
   Future<void> fetchClothingItems(String userId) async {}
