@@ -9,22 +9,27 @@ class AppConstants {
   static String get geminiVisionApiKey => dotenv.env['GEMINI_VISION_API_KEY'] ?? '';
   
   // The Gemini Model to use
-  // Using gemini-1.5-pro as the current stable "Pro" model. 
-  // Can be updated to 'gemini-2.5-pro' when available in the API.
   static const String geminiModel = 'gemini-2.5-flash';
 
-  static const String _baseUrl = 'http://24.243.30.143:8080';
-  static const String _androidUrl = 'http://10.0.2.2:8080';
-  
+  // --- SERVER CONFIGURATION ---
+
+  // 1. DEVELOPMENT (Your House):
+  // Use your Pi's Local IP (Run 'hostname -I' on Pi to find it)
+  // Example: 'http://192.168.1.50:8080'
+  static const String _localUrl = 'http://192.168.1.50:8080';
+
+  // 2. PRODUCTION (The World):
+  // Your Global Public IP
+  static const String _prodUrl = 'http://24.243.30.143:8080';
+
+  // TOGGLE THIS: Set to 'true' before building for friends/App Store
+  static const bool _isProduction = true;
+
   static String get baseUrl {
-    if (kIsWeb) return _baseUrl;
-    try {
-      if (Platform.isAndroid) return _androidUrl;
-    } catch (e) {
-      // Platform.isAndroid might throw on web if not guarded by kIsWeb, 
-      // but kIsWeb check above handles it.
-      // Also handles case where dart:io is not fully supported?
-    }
-    return _baseUrl;
+    // Web always requires the production URL if hosted externally, 
+    // or local if debugging locally.
+    if (kIsWeb && _isProduction) return _prodUrl;
+    
+    return _isProduction ? _prodUrl : _localUrl;
   }
 }
