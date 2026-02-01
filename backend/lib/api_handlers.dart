@@ -7,6 +7,7 @@ import 'package:mysql_client/mysql_client.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'package:http_parser/http_parser.dart';
+import 'package:bcrypt/bcrypt.dart';
 
 class ApiHandlers {
   final MySQLConnectionPool pool;
@@ -28,7 +29,7 @@ class ApiHandlers {
         return Response.badRequest(body: 'Missing required fields');
       }
 
-      final passwordHash = sha256.convert(utf8.encode(password)).toString();
+      final passwordHash = BCrypt.hashpw(password, BCrypt.gensalt());
 
       await pool.execute(
         'INSERT INTO users (username, email, password_hash, gender, favorite_style) VALUES (:username, :email, :password_hash, :gender, :favorite_style)',
@@ -74,10 +75,9 @@ class ApiHandlers {
       }
 
       final row = result.rows.first;
-      final storedHash = row.colByName('password_hash');
-      final passwordHash = sha256.convert(utf8.encode(password)).toString();
+      final storedHash = row.colByName('password_hash').toString();
 
-      if (passwordHash == storedHash) {
+      if (BCrypt.checkpw(password, storedHash)) {
         final user = {
           'id': row.colByName('id'),
           'username': row.colByName('username'),
