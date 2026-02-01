@@ -13,7 +13,7 @@ class AppConstants {
   // Can be updated to 'gemini-2.5-pro' when available in the API.
   static const String geminiModel = 'gemini-2.5-flash';
 
-  static const String _baseUrl = 'http://104.190.141.175:8080';
+  static const String _baseUrl = 'http://24.243.30.143:8080';
   static const String _androidUrl = 'http://10.0.2.2:8080';
   
   static String get baseUrl {
