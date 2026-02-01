@@ -2,6 +2,7 @@ class UserProfile {
   final String name;
   final String gender;
   final String favoriteStyle;
+  final String? profilePicUrl;
   final bool isDailyNotificationEnabled;
   final String? notificationTime; // Format: "HH:mm"
   final String? notificationOccasion;
@@ -10,6 +11,7 @@ class UserProfile {
     this.name = '',
     this.gender = '',
     this.favoriteStyle = '',
+    this.profilePicUrl,
     this.isDailyNotificationEnabled = false,
     this.notificationTime,
     this.notificationOccasion,
@@ -19,6 +21,7 @@ class UserProfile {
     String? name,
     String? gender,
     String? favoriteStyle,
+    String? profilePicUrl,
     bool? isDailyNotificationEnabled,
     String? notificationTime,
     String? notificationOccasion,
@@ -27,6 +30,7 @@ class UserProfile {
       name: name ?? this.name,
       gender: gender ?? this.gender,
       favoriteStyle: favoriteStyle ?? this.favoriteStyle,
+      profilePicUrl: profilePicUrl ?? this.profilePicUrl,
       isDailyNotificationEnabled: isDailyNotificationEnabled ?? this.isDailyNotificationEnabled,
       notificationTime: notificationTime ?? this.notificationTime,
       notificationOccasion: notificationOccasion ?? this.notificationOccasion,

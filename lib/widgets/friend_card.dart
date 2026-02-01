@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '../models/friend.dart';
 
 class FriendCard extends StatefulWidget {
@@ -52,6 +53,8 @@ class _FriendCardState extends State<FriendCard> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return FadeTransition(
       opacity: _fadeAnimation,
       child: SlideTransition(
@@ -62,47 +65,83 @@ class _FriendCardState extends State<FriendCard> with SingleTickerProviderStateM
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(15),
           ),
-          child: InkWell(
-            onTap: widget.onTap,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  flex: 3,
-                  child: widget.friend.previewItems.isEmpty 
-                    ? Container(
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                        child: const Icon(Icons.person, size: 50),
-                      )
-                    : GridView.count(
-                        physics: const NeverScrollableScrollPhysics(),
-                        crossAxisCount: 2,
-                        children: widget.friend.previewItems.take(4).map((item) {
-                          return Image.asset(
-                            item.imagePath,
-                            fit: BoxFit.cover,
-                          );
-                        }).toList(),
-                      ),
-                ),
-                Expanded(
-                  flex: 1,
-                  child: Container(
-                    padding: const EdgeInsets.all(8.0),
-                    alignment: Alignment.center,
-                    child: Text(
-                      widget.friend.name,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                flex: 3,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Background items preview (faded)
+                    Opacity(
+                      opacity: 0.3,
+                      child: widget.friend.previewItems.isEmpty 
+                        ? Container(color: theme.colorScheme.surfaceContainerHighest)
+                        : GridView.count(
+                            physics: const NeverScrollableScrollPhysics(),
+                            crossAxisCount: 2,
+                            children: widget.friend.previewItems.take(4).map((item) {
+                              final isNetwork = item.imagePath.startsWith('http');
+                              if (isNetwork) {
+                                return CachedNetworkImage(
+                                  imageUrl: item.imagePath,
+                                  fit: BoxFit.cover,
+                                  placeholder: (context, url) => Container(color: Colors.grey[200]),
+                                  errorWidget: (context, url, error) => const Icon(Icons.error),
+                                );
+                              } else {
+                                return Image.asset(
+                                  item.imagePath,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) => Container(color: Colors.grey),
+                                );
+                              }
+                            }).toList(),
                           ),
-                      textAlign: TextAlign.center,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
                     ),
+                    // Profile Picture (Clickable)
+                    Center(
+                      child: Material(
+                        color: Colors.transparent,
+                        shape: const CircleBorder(),
+                        clipBehavior: Clip.hardEdge,
+                        elevation: 4,
+                        child: InkWell(
+                          onTap: widget.onTap,
+                          child: CircleAvatar(
+                            radius: 40,
+                            backgroundColor: theme.colorScheme.surface,
+                            backgroundImage: widget.friend.profilePicUrl != null
+                                ? CachedNetworkImageProvider(widget.friend.profilePicUrl!)
+                                : null,
+                            child: widget.friend.profilePicUrl == null
+                                ? Icon(Icons.person, size: 40, color: theme.colorScheme.onSurface)
+                                : null,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                flex: 1,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  alignment: Alignment.center,
+                  child: Text(
+                    widget.friend.name,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

@@ -3,12 +3,14 @@ import 'clothing_item.dart';
 class Friend {
   final String id;
   final String name;
+  final String? profilePicUrl;
   final List<ClothingItem> previewItems;
   final List<ClothingItem> closetItems;
 
   Friend({
     required this.id,
     required this.name,
+    this.profilePicUrl,
     required List<ClothingItem> previewItems,
     required List<ClothingItem> closetItems,
   })  : previewItems = previewItems.map((item) => item.copyWith(isEditable: false)).toList(),
@@ -18,12 +20,14 @@ class Friend {
   Friend copyWith({
     String? id,
     String? name,
+    String? profilePicUrl,
     List<ClothingItem>? previewItems,
     List<ClothingItem>? closetItems,
   }) {
     return Friend(
       id: id ?? this.id,
       name: name ?? this.name,
+      profilePicUrl: profilePicUrl ?? this.profilePicUrl,
       previewItems: previewItems ?? this.previewItems,
       closetItems: closetItems ?? this.closetItems,
     );
@@ -41,6 +45,7 @@ class Friend {
     return Friend(
       id: json['id'],
       name: json['name'],
+      profilePicUrl: json['profilePicUrl'],
       previewItems: previewItems,
       closetItems: closetItems,
     );
@@ -52,6 +57,7 @@ class Friend {
     return other is Friend &&
         id == other.id &&
         name == other.name &&
+        profilePicUrl == other.profilePicUrl &&
         previewItems.length == other.previewItems.length &&
         _listsEqual(previewItems, other.previewItems) &&
         closetItems.length == other.closetItems.length &&
@@ -63,6 +69,7 @@ class Friend {
     return Object.hash(
       id,
       name,
+      profilePicUrl,
       Object.hashAll(previewItems),
       Object.hashAll(closetItems),
     );

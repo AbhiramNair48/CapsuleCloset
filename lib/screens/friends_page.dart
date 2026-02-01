@@ -57,7 +57,16 @@ class FriendsPage extends StatelessWidget {
                     },
                   ),
                   IconButton(
-                    icon: const Icon(Icons.group),
+                    icon: Consumer<DataService>(
+                      builder: (context, dataService, child) {
+                        final count = dataService.pendingFriendRequests.length;
+                        return Badge(
+                          isLabelVisible: count > 0,
+                          label: Text('$count'),
+                          child: const Icon(Icons.group),
+                        );
+                      },
+                    ),
                     tooltip: 'Friend Requests',
                     onPressed: () {
                       Navigator.push(
