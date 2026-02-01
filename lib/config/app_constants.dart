@@ -16,7 +16,7 @@ class AppConstants {
   // 1. DEVELOPMENT (Your House):
   // Use your Pi's Local IP (Run 'hostname -I' on Pi to find it)
   // Example: 'http://192.168.1.50:8080'
-  static const String _localUrl = 'http://192.168.1.50:8080';
+  static const String _localUrl = 'http://192.168.1.175:8080';
 
   // 2. PRODUCTION (The World):
   // Your Global Public IP
