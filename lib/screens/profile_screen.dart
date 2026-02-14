@@ -1,8 +1,10 @@
-import 'package:capsule_closet_app/services/theme_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/user_profile.dart';
 import '../services/data_service.dart';
+import '../widgets/glass_scaffold.dart';
+import '../widgets/glass_container.dart';
+import '../theme/app_design.dart';
 
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -25,7 +27,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String _notificationOccasion = 'Casual';
   bool _isUploading = false;
   
-  final List<String> _occasions = ['Casual', 'Work', 'Party', 'Date', 'Gym', 'School'];
+  final List<String> _standardOccasions = ['Casual', 'Work', 'Party', 'Date', 'Gym', 'School'];
+  List<String> get _currentOccasionList {
+    if (!_standardOccasions.contains(_notificationOccasion) && _notificationOccasion.isNotEmpty) {
+      return [..._standardOccasions, _notificationOccasion, 'Custom'];
+    }
+    return [..._standardOccasions, 'Custom'];
+  }
 
   @override
   void initState() {
@@ -42,12 +50,68 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _notificationTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
       }
     }
-    if (userProfile.notificationOccasion != null && _occasions.contains(userProfile.notificationOccasion)) {
+    if (userProfile.notificationOccasion != null) {
       _notificationOccasion = userProfile.notificationOccasion!;
     }
   }
 
+  Future<void> _handleOccasionChange(String? newValue) async {
+    if (newValue == 'Custom') {
+      final customController = TextEditingController();
+      final String? customOccasion = await showDialog<String>(
+        context: context,
+        builder: (context) => AlertDialog(
+          backgroundColor: const Color(0xFF1E1E1E),
+          title: Text('Enter Custom Occasion', style: AppText.header.copyWith(fontSize: 20)),
+          content: GlassContainer(
+            borderRadius: BorderRadius.circular(12),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            color: Colors.white.withValues(alpha: 0.05),
+            child: TextField(
+              controller: customController,
+              style: AppText.body.copyWith(color: Colors.white),
+              cursorColor: AppColors.accent,
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                errorBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
+                hintText: 'e.g., Wedding',
+                hintStyle: TextStyle(color: Colors.white30),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, customController.text.trim()),
+              child: Text('OK', style: TextStyle(color: AppColors.accent)),
+            ),
+          ],
+        ),
+      );
+
+      if (!mounted) return;
+
+      if (customOccasion != null && customOccasion.isNotEmpty) {
+        setState(() {
+          _notificationOccasion = customOccasion;
+        });
+      }
+    } else if (newValue != null) {
+      setState(() {
+        _notificationOccasion = newValue;
+      });
+    }
+  }
+
   Future<void> _pickImage() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final dataService = context.read<DataService>();
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
     
@@ -56,7 +120,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (image != null) {
       setState(() => _isUploading = true);
       
-      final dataService = context.read<DataService>();
       final url = await dataService.uploadProfilePicture(image);
       
       if (!mounted) return;
@@ -64,11 +127,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() => _isUploading = false);
       
       if (url != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(content: Text('Profile picture updated!')),
         );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
+        messenger.showSnackBar(
           const SnackBar(content: Text('Failed to update profile picture')),
         );
       }
@@ -85,21 +148,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _saveProfile() async {
     if (_formKey.currentState!.validate()) {
-      final currentProfile = context.read<DataService>().userProfile;
+      final dataService = context.read<DataService>();
+      final currentProfile = dataService.userProfile;
       final newProfile = UserProfile(
         name: _nameController.text,
         gender: _genderController.text,
         favoriteStyle: _styleController.text,
-        profilePicUrl: currentProfile.profilePicUrl, // Preserve current URL
+        profilePicUrl: currentProfile.profilePicUrl, 
         isDailyNotificationEnabled: _isDailyNotificationEnabled,
         notificationTime: '${_notificationTime.hour}:${_notificationTime.minute.toString().padLeft(2, '0')}',
         notificationOccasion: _notificationOccasion,
       );
 
-      context.read<DataService>().updateUserProfile(newProfile);
+      // Update backend (User table)
+      await dataService.updateUserProfile(newProfile);
       
-      // Save notification settings explicitly to handle scheduling
-      await context.read<DataService>().saveNotificationSettings(
+      // Save notification settings explicitly
+      await dataService.saveNotificationSettings(
         _isDailyNotificationEnabled,
         '${_notificationTime.hour}:${_notificationTime.minute.toString().padLeft(2, '0')}',
         _notificationOccasion,
@@ -118,6 +183,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
       initialTime: _notificationTime,
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.dark().copyWith(
+            colorScheme: ColorScheme.dark(
+              primary: AppColors.accent,
+              onPrimary: Colors.white,
+              surface: const Color(0xFF1E1E1E),
+              onSurface: Colors.white,
+            ),
+            dialogTheme: const DialogThemeData(
+              backgroundColor: Color(0xFF1E1E1E),
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked != null && picked != _notificationTime) {
       setState(() {
@@ -129,14 +210,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final userProfile = context.watch<DataService>().userProfile;
-    final theme = Theme.of(context);
 
-    return Scaffold(
+    return GlassScaffold(
       appBar: AppBar(
-        title: const Text('My Profile'),
+        title: Text('My Profile', style: AppText.header),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(20.0),
         child: Form(
           key: _formKey,
           child: Column(
@@ -145,27 +229,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Center(
                 child: Stack(
                   children: [
-                    CircleAvatar(
-                      radius: 60,
-                      backgroundColor: theme.colorScheme.surfaceContainerHighest,
-                      backgroundImage: userProfile.profilePicUrl != null
-                          ? CachedNetworkImageProvider(userProfile.profilePicUrl!)
-                          : null,
-                      child: _isUploading
-                          ? const CircularProgressIndicator()
-                          : userProfile.profilePicUrl == null
-                              ? Icon(Icons.person, size: 60, color: theme.colorScheme.onSurfaceVariant)
-                              : null,
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.accent, width: 2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.accent.withValues(alpha: 0.3),
+                            blurRadius: 20,
+                          )
+                        ],
+                      ),
+                      child: CircleAvatar(
+                        radius: 60,
+                        backgroundColor: Colors.white10,
+                        backgroundImage: userProfile.profilePicUrl != null
+                            ? CachedNetworkImageProvider(userProfile.profilePicUrl!)
+                            : null,
+                        child: _isUploading
+                            ? const CircularProgressIndicator(color: AppColors.accent)
+                            : userProfile.profilePicUrl == null
+                                ? const Icon(Icons.person, size: 60, color: Colors.white54)
+                                : null,
+                      ),
                     ),
                     Positioned(
                       bottom: 0,
                       right: 0,
-                      child: CircleAvatar(
-                        backgroundColor: theme.colorScheme.primary,
-                        radius: 18,
-                        child: IconButton(
-                          icon: const Icon(Icons.camera_alt, size: 18, color: Colors.white),
-                          onPressed: _pickImage,
+                      child: GestureDetector(
+                        onTap: _pickImage,
+                        child: GlassContainer(
+                          width: 40,
+                          height: 40,
+                          borderRadius: BorderRadius.circular(20),
+                          color: AppColors.accent,
+                          border: Border.all(color: Colors.white24),
+                          child: const Icon(Icons.camera_alt, size: 20, color: Colors.black),
                         ),
                       ),
                     ),
@@ -173,9 +273,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              Text(
-                'Tell us about yourself so your AI Stylist can give better recommendations.',
-                style: Theme.of(context).textTheme.bodyMedium,
+              GlassContainer(
+                borderRadius: BorderRadius.circular(16),
+                padding: const EdgeInsets.all(16),
+                color: AppColors.glassFill.withValues(alpha: 0.05),
+                child: Text(
+                  'Tell us about yourself so your AI Stylist can give better recommendations.',
+                  style: AppText.body.copyWith(color: Colors.white70),
+                  textAlign: TextAlign.center,
+                ),
               ),
               const SizedBox(height: 24),
               _buildTextField('Name', _nameController, Icons.person_outline),
@@ -183,77 +289,86 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildTextField('Gender', _genderController, Icons.wc),
               const SizedBox(height: 16),
               _buildTextField(
-                  'Favorite Style (e.g., Casual, Chic, Streetwear)',
+                  'Favorite Style (e.g., Casual, Chic)',
                   _styleController,
                   Icons.style),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               
-              const Divider(),
-              const SizedBox(height: 8),
               Text(
                 'Daily Outfit Notification',
-                style: Theme.of(context).textTheme.titleMedium,
+                style: AppText.title,
               ),
-              SwitchListTile(
-                title: const Text('Enable Daily Notifications'),
-                subtitle: const Text('Get an outfit suggestion every day'),
-                value: _isDailyNotificationEnabled,
-                onChanged: (bool value) {
-                  setState(() {
-                    _isDailyNotificationEnabled = value;
-                  });
-                },
-              ),
-              if (_isDailyNotificationEnabled) ...[
-                ListTile(
-                  leading: const Icon(Icons.access_time),
-                  title: const Text('Notification Time'),
-                  trailing: Text(_notificationTime.format(context)),
-                  onTap: () => _selectTime(context),
-                ),
-                ListTile(
-                  leading: const Icon(Icons.event),
-                  title: const Text('Occasion'),
-                  trailing: DropdownButton<String>(
-                    value: _notificationOccasion,
-                    onChanged: (String? newValue) {
-                      if (newValue != null) {
+              const SizedBox(height: 16),
+              
+              GlassContainer(
+                borderRadius: BorderRadius.circular(16),
+                padding: EdgeInsets.zero,
+                child: Column(
+                  children: [
+                    SwitchListTile(
+                      title: Text('Enable Notifications', style: AppText.bodyBold.copyWith(color: Colors.white)),
+                      subtitle: Text('Get an outfit suggestion every day', style: AppText.label.copyWith(color: Colors.white54)),
+                      value: _isDailyNotificationEnabled,
+                      thumbColor: WidgetStateProperty.all(AppColors.accent),
+                      trackColor: WidgetStateProperty.resolveWith((states) => 
+                        states.contains(WidgetState.selected) ? AppColors.accent.withValues(alpha: 0.5) : Colors.grey.withValues(alpha: 0.3)
+                      ),
+                      onChanged: (bool value) {
                         setState(() {
-                          _notificationOccasion = newValue;
+                          _isDailyNotificationEnabled = value;
                         });
-                      }
-                    },
-                    items: _occasions.map<DropdownMenuItem<String>>((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
-                      );
-                    }).toList(),
+                      },
+                    ),
+                    if (_isDailyNotificationEnabled) ...[
+                      const Divider(color: Colors.white10, height: 1),
+                      ListTile(
+                        leading: const Icon(Icons.access_time, color: AppColors.accent),
+                        title: Text('Time', style: AppText.body.copyWith(color: Colors.white)),
+                        trailing: Text(_notificationTime.format(context), style: AppText.bodyBold.copyWith(color: AppColors.accent)),
+                        onTap: () => _selectTime(context),
+                      ),
+                      const Divider(color: Colors.white10, height: 1),
+                      ListTile(
+                        leading: const Icon(Icons.event, color: AppColors.accent),
+                        title: Text('Occasion', style: AppText.body.copyWith(color: Colors.white)),
+                        trailing: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: _currentOccasionList.contains(_notificationOccasion) ? _notificationOccasion : 'Custom',
+                            dropdownColor: const Color(0xFF2C2C2E),
+                            icon: const Icon(Icons.arrow_drop_down, color: AppColors.accent),
+                            style: AppText.bodyBold.copyWith(color: AppColors.accent),
+                            onChanged: _handleOccasionChange,
+                            items: _currentOccasionList.map<DropdownMenuItem<String>>((String value) {
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: Text(value),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 32),
+              GestureDetector(
+                onTap: _saveProfile,
+                child: GlassContainer(
+                  height: 56,
+                  borderRadius: BorderRadius.circular(28),
+                  color: AppColors.accent.withValues(alpha: 0.2),
+                  border: Border.all(color: AppColors.accent.withValues(alpha: 0.5)),
+                  child: Center(
+                    child: Text(
+                      'Save Profile',
+                      style: AppText.bodyBold.copyWith(fontSize: 16, color: Colors.white),
+                    ),
                   ),
                 ),
-              ],
-              const Divider(),
-              const SizedBox(height: 8),
-
-              Consumer<ThemeService>(
-                builder: (context, themeService, child) {
-                  return SwitchListTile(
-                    title: const Text('Dark Mode'),
-                    value: themeService.isDarkMode,
-                    onChanged: (value) {
-                      themeService.toggleTheme();
-                    },
-                    secondary: Icon(themeService.isDarkMode
-                        ? Icons.dark_mode
-                        : Icons.light_mode),
-                  );
-                },
               ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: _saveProfile,
-                child: const Text('Save Profile'),
-              ),
+              const SizedBox(height: 40),
             ],
           ),
         ),
@@ -263,16 +378,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildTextField(String label, TextEditingController controller,
       IconData icon, {int maxLines = 1}) {
-    return TextFormField(
-      controller: controller,
-      maxLines: maxLines,
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(icon),
-        border: OutlineInputBorder(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: AppText.label.copyWith(color: Colors.white70)),
+        const SizedBox(height: 8),
+        GlassContainer(
           borderRadius: BorderRadius.circular(12),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          color: Colors.white.withValues(alpha: 0.05),
+          child: TextFormField(
+            controller: controller,
+            maxLines: maxLines,
+            style: AppText.body.copyWith(color: Colors.white),
+            cursorColor: AppColors.accent,
+            decoration: InputDecoration(
+              prefixIcon: Icon(icon, color: AppColors.accent),
+              border: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              errorBorder: InputBorder.none,
+              disabledBorder: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(vertical: 14),
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 }

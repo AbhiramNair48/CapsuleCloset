@@ -4,30 +4,51 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../services/data_service.dart';
 import '../models/clothing_item.dart';
 import '../widgets/empty_state_widget.dart';
+import '../widgets/glass_scaffold.dart';
+import '../widgets/glass_container.dart';
+import '../theme/app_design.dart';
 
 class HamperScreen extends StatelessWidget {
   const HamperScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return GlassScaffold(
       appBar: AppBar(
-        title: const Text('Hamper'),
+        title: Text('Hamper', style: AppText.header),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           Consumer<DataService>(
             builder: (context, dataService, child) {
               if (dataService.hamperItems.isEmpty) return const SizedBox.shrink();
-              return TextButton.icon(
-                onPressed: () async {
-                  await dataService.markAllClean();
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('All clothes marked as clean!')),
-                    );
-                  }
-                },
-                icon: const Icon(Icons.check_circle_outline),
-                label: const Text('Clean All'),
+              return Padding(
+                padding: const EdgeInsets.only(right: 16.0),
+                child: GestureDetector(
+                  onTap: () async {
+                    await dataService.markAllClean();
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('All clothes marked as clean!')),
+                      );
+                    }
+                  },
+                  child: GlassContainer(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    borderRadius: BorderRadius.circular(20),
+                    color: AppColors.accent.withValues(alpha: 0.2),
+                    border: Border.all(color: AppColors.accent.withValues(alpha: 0.5)),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.check_circle_outline, color: Colors.white, size: 18),
+                        const SizedBox(width: 6),
+                        Text('Clean All', style: AppText.bodyBold.copyWith(color: Colors.white, fontSize: 12)),
+                      ],
+                    ),
+                  ),
+                ),
               );
             },
           ),
@@ -38,20 +59,20 @@ class HamperScreen extends StatelessWidget {
           final hamperItems = dataService.hamperItems;
 
           if (hamperItems.isEmpty) {
-            return const EmptyStateWidget(
+            return EmptyStateWidget(
               icon: Icons.local_laundry_service_outlined,
               message: 'Your hamper is empty!',
               buttonText: 'Back to Closet',
-              // onPressed handled by popping navigation usually, or could go back
+              onPressed: () => Navigator.pop(context),
             );
           }
 
           return GridView.builder(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(16.0),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              crossAxisSpacing: 10,
-              mainAxisSpacing: 10,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
               childAspectRatio: 0.75,
             ),
             itemCount: hamperItems.length,
@@ -75,41 +96,46 @@ class _HamperItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isNetworkImage = item.imagePath.startsWith('http');
 
-    return Card(
-      clipBehavior: Clip.antiAlias,
+    return GlassContainer(
+      borderRadius: BorderRadius.circular(12),
+      padding: EdgeInsets.zero,
       child: Stack(
         children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
-                child: isNetworkImage
-                    ? CachedNetworkImage(
-                        imageUrl: item.imagePath,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(color: Colors.grey[200]),
-                        errorWidget: (context, url, error) => const Icon(Icons.error),
-                      )
-                    : Image.asset(
-                        item.imagePath,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
-                      ),
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                  child: isNetworkImage
+                      ? CachedNetworkImage(
+                          imageUrl: item.imagePath,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(color: Colors.white10),
+                          errorWidget: (context, url, error) => const Icon(Icons.error, color: Colors.white54),
+                        )
+                      : Image.asset(
+                          item.imagePath,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => const Icon(Icons.error, color: Colors.white54),
+                        ),
+                ),
               ),
-              Padding(
-                padding: const EdgeInsets.all(8.0),
+              Container(
+                padding: const EdgeInsets.all(12.0),
+                color: Colors.black.withValues(alpha: 0.2),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       item.type,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+                      style: AppText.bodyBold.copyWith(color: Colors.white),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
                       item.color,
-                      style: Theme.of(context).textTheme.bodySmall,
+                      style: AppText.label.copyWith(color: Colors.white70),
                     ),
                   ],
                 ),
@@ -117,22 +143,22 @@ class _HamperItemCard extends StatelessWidget {
             ],
           ),
           Positioned(
-            right: 4,
-            top: 4,
-            child: CircleAvatar(
-              backgroundColor: Colors.white,
-              radius: 18,
-              child: IconButton(
-                iconSize: 20,
-                padding: EdgeInsets.zero,
-                icon: const Icon(Icons.restore_from_trash, color: Colors.green),
-                tooltip: 'Mark Clean',
-                onPressed: () {
-                  context.read<DataService>().markItemClean(item.id);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('${item.type} marked as clean')),
-                  );
-                },
+            right: 8,
+            top: 8,
+            child: GestureDetector(
+              onTap: () {
+                context.read<DataService>().markItemClean(item.id);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('${item.type} marked as clean')),
+                );
+              },
+              child: GlassContainer(
+                width: 36,
+                height: 36,
+                borderRadius: BorderRadius.circular(18),
+                color: Colors.green.withValues(alpha: 0.3),
+                border: Border.all(color: Colors.green.withValues(alpha: 0.5)),
+                child: const Icon(Icons.restore_from_trash, color: Colors.white, size: 20),
               ),
             ),
           ),

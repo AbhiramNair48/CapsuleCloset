@@ -70,8 +70,7 @@ class AppTheme {
 
       // Input Decoration
       inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: Colors.white,
+        filled: false,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: colorScheme.primary),
@@ -214,8 +213,7 @@ class AppTheme {
 
       // Input Decoration
       inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: const Color(0xFF1E1E1E),
+        filled: false,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: colorScheme.primary),

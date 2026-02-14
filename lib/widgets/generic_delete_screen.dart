@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'glass_scaffold.dart';
+import 'glass_container.dart';
+import '../theme/app_design.dart';
 
 class GenericDeleteScreen<T> extends StatefulWidget {
   final String title;
@@ -47,26 +50,31 @@ class _GenericDeleteScreenState<T> extends State<GenericDeleteScreen<T>> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text(widget.title),
-        content: Text('Are you sure you want to ${widget.deleteLabel.toLowerCase()} ${_selectedIds.length} item(s)?'),
+        backgroundColor: const Color(0xFF1E1E1E),
+        title: Text(widget.title, style: AppText.header),
+        content: Text(
+          'Are you sure you want to ${widget.deleteLabel.toLowerCase()} ${_selectedIds.length} item(s)?',
+          style: AppText.body,
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
           ),
           TextButton(
             onPressed: () {
+              final messenger = ScaffoldMessenger.of(context);
               widget.onDelete(_selectedIds);
               Navigator.pop(dialogContext); // Close dialog
               Navigator.pop(context); // Close screen
-              ScaffoldMessenger.of(context).showSnackBar(
+              messenger.showSnackBar(
                 SnackBar(content: Text(widget.snackBarMessage)),
               );
             },
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(context).colorScheme.error,
+            child: Text(
+              widget.deleteLabel,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
-            child: Text(widget.deleteLabel),
           ),
         ],
       ),
@@ -75,12 +83,21 @@ class _GenericDeleteScreenState<T> extends State<GenericDeleteScreen<T>> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return GlassScaffold(
       appBar: AppBar(
-        title: Text(widget.title),
+        title: Text(widget.title, style: AppText.header),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: widget.items.isEmpty
-          ? Center(child: Text(widget.emptyMessage))
+          ? Center(
+              child: Text(
+                widget.emptyMessage,
+                style: AppText.body.copyWith(fontSize: 18),
+              ),
+            )
           : GridView.builder(
               padding: const EdgeInsets.all(16.0),
               gridDelegate: widget.gridDelegate,
@@ -104,13 +121,20 @@ class _GenericDeleteScreenState<T> extends State<GenericDeleteScreen<T>> {
                         right: 8,
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary,
+                            color: AppColors.accent,
                             shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.2),
+                                blurRadius: 4,
+                              )
+                            ],
                           ),
+                          padding: const EdgeInsets.all(4),
                           child: const Icon(
                             Icons.check,
-                            color: Colors.white,
-                            size: 20,
+                            color: Colors.black,
+                            size: 16,
                           ),
                         ),
                       ),
@@ -119,12 +143,25 @@ class _GenericDeleteScreenState<T> extends State<GenericDeleteScreen<T>> {
               },
             ),
       floatingActionButton: _selectedIds.isNotEmpty
-          ? FloatingActionButton.extended(
-              onPressed: _deleteSelected,
-              label: Text('${widget.deleteLabel} (${_selectedIds.length})'),
-              icon: const Icon(Icons.delete),
-              backgroundColor: Theme.of(context).colorScheme.error,
-              foregroundColor: Theme.of(context).colorScheme.onError,
+          ? GestureDetector(
+              onTap: _deleteSelected,
+              child: GlassContainer(
+                borderRadius: BorderRadius.circular(30),
+                color: Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
+                border: Border.all(color: Theme.of(context).colorScheme.error.withValues(alpha: 0.5)),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.delete, color: Colors.white),
+                    const SizedBox(width: 8),
+                    Text(
+                      '${widget.deleteLabel} (${_selectedIds.length})',
+                      style: AppText.bodyBold.copyWith(color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
             )
           : null,
     );

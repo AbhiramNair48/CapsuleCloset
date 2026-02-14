@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/outfit.dart';
+import 'glass_container.dart';
+import '../theme/app_design.dart';
 
 /// Widget for displaying an outfit card with a collage of clothing items and smooth entry animation
 class OutfitCard extends StatefulWidget {
@@ -58,12 +60,11 @@ class _OutfitCardState extends State<OutfitCard> with SingleTickerProviderStateM
       opacity: _fadeAnimation,
       child: ScaleTransition(
         scale: _scaleAnimation,
-        child: Card(
-          elevation: 3,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: widget.onTap,
+        child: GestureDetector(
+          onTap: widget.onTap,
+          child: GlassContainer(
+            borderRadius: BorderRadius.circular(12),
+            padding: EdgeInsets.zero,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -71,13 +72,11 @@ class _OutfitCardState extends State<OutfitCard> with SingleTickerProviderStateM
                   child: _buildCollage(),
                 ),
                 Container(
-                  color: Theme.of(context).colorScheme.surface,
+                  color: Colors.black.withValues(alpha: 0.3), // Darker overlay for text
                   padding: const EdgeInsets.all(10.0),
                   child: Text(
                     widget.outfit.name,
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                    style: AppText.bodyBold.copyWith(color: Colors.white),
                     textAlign: TextAlign.center,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -98,9 +97,9 @@ class _OutfitCardState extends State<OutfitCard> with SingleTickerProviderStateM
 
     if (displayCount == 0) {
       return Container(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        color: Colors.white10,
         child: const Center(
-          child: Icon(Icons.image_not_supported, size: _errorIconSize),
+          child: Icon(Icons.image_not_supported, size: _errorIconSize, color: Colors.white24),
         ),
       );
     }
@@ -194,15 +193,16 @@ class _OutfitCardState extends State<OutfitCard> with SingleTickerProviderStateM
       memCacheWidth: 200,
       memCacheHeight: 200,
       placeholder: (context, url) => Container(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+        color: Colors.white10,
+        child: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
       ),
       errorWidget: (context, url, error) {
         return Container(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
+          color: Colors.white10,
           child: const Icon(
             Icons.image_not_supported,
             size: _errorIconSize,
+            color: Colors.white24,
           ),
         );
       },

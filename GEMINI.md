@@ -14,7 +14,6 @@ The application follows a layered architecture:
 *   **Screens (`lib/screens`):** UI components for different application pages.
 *   **Services (`lib/services`):** Business logic and data management (`AuthService`, `DataService`).
 *   **Models (`lib/models`):** Data structures representing domain objects (`ClothingItem`, `Outfit`, `Friend`).
-*   **Data (`lib/data`):** Mock data sources.
 *   **Widgets (`lib/widgets`):** Reusable UI elements.
 *   **Theme (`lib/theme`):** Application theme configuration.
 *   **Backend (`backend/`):** Standalone Dart server (Shelf + MySQL) for data persistence.
@@ -63,7 +62,6 @@ The application follows a layered architecture:
     *   `widgets/`: Reusable components.
     *   `services/`: State and logic.
     *   `models/`: Data classes.
-    *   `data/`: Mock data.
     *   `theme/`: Theme definitions.
 *   `backend/`: Server-side code (Dart/Shelf).
     *   `bin/`: Server entry point (`server.dart`).
@@ -170,3 +168,16 @@ The application follows a layered architecture:
     *   Updated `test/services/data_service_test.dart` to mock `StorageService`, fixing test failures related to Firebase.
 *   **Testing:**
     *   Verified **22 passing tests** (App) and **1 passing test** (Backend).
+
+## Refactor Log (February 4, 2026)
+*   **Code Quality & Linting:**
+    *   Resolved `use_build_context_synchronously` lints in `ProfileScreen` by properly capturing `DataService` and `ScaffoldMessenger` before async gaps.
+    *   Fixed deprecated `DialogTheme` usage in `ProfileScreen` (migrated to `DialogThemeData`).
+    *   Fixed deprecated `activeColor` in `SwitchListTile` (migrated to `thumbColor`).
+    *   Removed unused import in `MainNavigationScreen`.
+    *   Deleted unused mock data files (`lib/data/*.dart`).
+*   **Testing:**
+    *   Fixed `AIChatPage` test: Wrapped widget in `Scaffold` and used existing `logo.png` asset to prevent loading errors.
+    *   Fixed `GenericDeleteScreen` test: Updated finder to locate "Delete" button by text, resolving failure due to custom widget implementation.
+    *   Verified **22 passing tests** (App) and **1 passing test** (Backend).
+    *   Verified **0 static analysis issues** in both App and Backend.

@@ -1,8 +1,6 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-/// Application constants and configuration
 class AppConstants {
   // Retrieves the API key from the .env file
   static String get geminiLLMApiKey => dotenv.env['GEMINI_LLM_API_KEY'] ?? '';

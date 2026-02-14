@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/data_service.dart';
 import '../services/auth_service.dart';
-
 import 'package:cached_network_image/cached_network_image.dart';
+import '../widgets/glass_scaffold.dart';
+import '../widgets/glass_container.dart';
+import '../theme/app_design.dart';
 
 class FindFriendsScreen extends StatefulWidget {
   const FindFriendsScreen({super.key});
@@ -16,6 +18,7 @@ class _FindFriendsScreenState extends State<FindFriendsScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> _searchResults = [];
   bool _isLoading = false;
+  final Set<String> _sentRequests = {}; // Track locally sent requests
 
   Future<void> _searchUsers() async {
     final query = _searchController.text.trim();
@@ -49,7 +52,7 @@ class _FindFriendsScreenState extends State<FindFriendsScreen> {
     }
   }
 
-  Future<void> _sendFriendRequest(String recipientId) async {
+  Future<void> _sendFriendRequest(String recipientId, String recipientName) async {
     final authService = Provider.of<AuthService>(context, listen: false);
     final senderUserEmail = authService.currentUser?['email']?.toString();
 
@@ -62,26 +65,17 @@ class _FindFriendsScreenState extends State<FindFriendsScreen> {
       return;
     }
 
-    // You might still want to prevent sending a request to yourself
-    // For this, you would need the recipient's email or compare IDs after fetching user details
-    final senderId = authService.currentUser?['id']?.toString();
-    if (senderId != null && senderId == recipientId) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Cannot send friend request to yourself.')),
-        );
-      }
-      return;
-    }
-
     try {
       final dataService = Provider.of<DataService>(context, listen: false);
       final success = await dataService.sendFriendRequest(senderUserEmail, recipientId);
 
       if (mounted) {
         if (success) {
+          setState(() {
+            _sentRequests.add(recipientId);
+          });
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Friend request sent to $recipientId.')),
+            SnackBar(content: Text('Friend request sent to $recipientName.')),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -100,55 +94,103 @@ class _FindFriendsScreenState extends State<FindFriendsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return GlassScaffold(
       appBar: AppBar(
-        title: const Text('Find Friends'),
+        title: Text('Find Friends', style: AppText.header),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                labelText: 'Search by Username',
-                suffixIcon: _isLoading
-                    ? const Padding(
-                        padding: EdgeInsets.all(8.0),
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : IconButton(
-                        icon: const Icon(Icons.search),
-                        onPressed: _searchUsers,
-                      ),
+            GlassContainer(
+              borderRadius: BorderRadius.circular(12),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              color: Colors.white.withValues(alpha: 0.05),
+              child: TextField(
+                controller: _searchController,
+                style: AppText.body.copyWith(color: Colors.white),
+                cursorColor: AppColors.accent,
+                decoration: InputDecoration(
+                  labelText: 'Search by Username',
+                  labelStyle: AppText.label.copyWith(color: Colors.white70),
+                  border: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  errorBorder: InputBorder.none,
+                  disabledBorder: InputBorder.none,
+                  suffixIcon: _isLoading
+                      ? const Padding(
+                          padding: EdgeInsets.all(12.0),
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : IconButton(
+                          icon: const Icon(Icons.search, color: Colors.white70),
+                          onPressed: _searchUsers,
+                        ),
+                ),
+                onSubmitted: (_) => _searchUsers(),
               ),
-              onSubmitted: (_) => _searchUsers(),
             ),
             const SizedBox(height: 16),
             Expanded(
-              child: ListView.builder(
-                itemCount: _searchResults.length,
-                itemBuilder: (context, index) {
-                  final user = _searchResults[index];
-                  return Card(
-                    margin: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-                        backgroundImage: user['profile_pic_url'] != null
-                            ? CachedNetworkImageProvider(user['profile_pic_url'])
-                            : null,
-                        child: user['profile_pic_url'] == null
-                            ? const Icon(Icons.person)
-                            : null,
-                      ),
-                      title: Text(user['username']),
-                      subtitle: Text(user['favorite_style'] ?? 'N/A'),
-                      trailing: ElevatedButton(
-                        onPressed: () => _sendFriendRequest(user['id'].toString()),
-                        child: const Text('Add Friend'),
-                      ),
-                    ),
+              child: Consumer<DataService>(
+                builder: (context, dataService, child) {
+                  return ListView.builder(
+                    itemCount: _searchResults.length,
+                    itemBuilder: (context, index) {
+                      final user = _searchResults[index];
+                      final userId = user['id'].toString();
+                      final isFriend = dataService.friends.any((f) => f.id == userId);
+                      final isPending = _sentRequests.contains(userId);
+
+                      Widget trailingWidget;
+                      if (isFriend) {
+                        trailingWidget = Text('Your Friend', style: AppText.bodyBold.copyWith(color: AppColors.accent));
+                      } else if (isPending) {
+                        trailingWidget = Text('Request Pending', style: AppText.body.copyWith(color: Colors.white70));
+                      } else {
+                        trailingWidget = GestureDetector(
+                          onTap: () => _sendFriendRequest(userId, user['username']),
+                          child: GlassContainer(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            borderRadius: BorderRadius.circular(20),
+                            color: AppColors.accent.withValues(alpha: 0.2),
+                            border: Border.all(color: AppColors.accent.withValues(alpha: 0.5)),
+                            child: Text(
+                              'Add Friend',
+                              style: AppText.bodyBold.copyWith(fontSize: 12, color: Colors.white),
+                            ),
+                          ),
+                        );
+                      }
+
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: GlassContainer(
+                          borderRadius: BorderRadius.circular(16),
+                          padding: const EdgeInsets.all(12),
+                          child: ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: CircleAvatar(
+                              backgroundColor: Colors.white10,
+                              backgroundImage: user['profile_pic_url'] != null
+                                  ? CachedNetworkImageProvider(user['profile_pic_url'])
+                                  : null,
+                              child: user['profile_pic_url'] == null
+                                  ? const Icon(Icons.person, color: Colors.white)
+                                  : null,
+                            ),
+                            title: Text(user['username'], style: AppText.bodyBold.copyWith(color: Colors.white)),
+                            subtitle: Text(user['favorite_style'] ?? 'N/A', style: AppText.label.copyWith(color: Colors.white70)),
+                            trailing: trailingWidget,
+                          ),
+                        ),
+                      );
+                    },
                   );
                 },
               ),

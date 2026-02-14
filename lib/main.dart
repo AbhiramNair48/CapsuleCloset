@@ -56,6 +56,7 @@ class MyApp extends StatelessWidget {
         builder: (context, themeService, child) {
           return MaterialApp(
             title: 'Capsule Closet',
+            debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
             themeMode: themeService.themeMode,

@@ -402,8 +402,8 @@ class ApiHandlers {
 
       final insertResult = await pool.execute(
         '''
-        INSERT INTO closet (user_id, clothing_type, color, material, style, description, img_link, public)
-        VALUES (:user_id, :type, :color, :material, :style, :description, :img_link, :public)
+        INSERT INTO closet (user_id, clothing_type, color, material, style, description, img_link, public, is_clean)
+        VALUES (:user_id, :type, :color, :material, :style, :description, :img_link, :public, :is_clean)
         ''',
         {
           'user_id': itemData['user_id'],
@@ -414,6 +414,7 @@ class ApiHandlers {
           'description': itemData['description'],
           'img_link': finalImgLink,
           'public': (itemData['public'] == 'true') ? 1 : 0,
+          'is_clean': 1,
         },
       );
 
@@ -557,6 +558,9 @@ class ApiHandlers {
         // Safe access for is_clean in case column doesn't exist yet (though query would fail)
         // If query fails, we land in catch block.
         // If we migrate properly, it exists.
+        final isCleanVal = row.colByName('is_clean');
+        // Treat 1 as true. Treat NULL as true (default to clean for legacy/broken data). Treat 0 as false.
+        final isClean = (isCleanVal == '1' || isCleanVal == null);
         
         return {
           'id': row.colByName('id').toString(),
@@ -567,7 +571,7 @@ class ApiHandlers {
           'style': row.colByName('style'),
           'description': row.colByName('description'),
           'public': row.colByName('public') == '1',
-          'isClean': row.colByName('is_clean') == '1',
+          'isClean': isClean,
         };
       }).toList();
 
