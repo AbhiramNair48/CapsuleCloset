@@ -1,210 +1,256 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:capsule_closet_app/services/data_service.dart';
+import 'package:capsule_closet_app/models/outfit.dart';
 import 'package:provider/provider.dart';
-import '../services/data_service.dart';
-import '../models/outfit.dart';
+import '../theme/app_design.dart';
+import 'glass_container.dart';
 
-/// OutfitPreview widget to display clothing images
-/// Shows a list of outfit images in a vertical layout
-class OutfitPreview extends StatefulWidget {
+class OutfitPreview extends StatelessWidget {
   final List<String> imagePaths;
   final List<String> itemIds;
+  final String? outfitName;
 
   const OutfitPreview({
     super.key,
     required this.imagePaths,
     this.itemIds = const [],
+    this.outfitName,
   });
 
   @override
-  State<OutfitPreview> createState() => _OutfitPreviewState();
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Optional Label
+        // Padding(
+        //   padding: const EdgeInsets.only(left: 16.0, bottom: 8.0),
+        //   child: Text("Here's a look for you:", style: AppText.label),
+        // ),
+        GlassContainer(
+          width: double.infinity,
+          borderRadius: BorderRadius.circular(AppRadius.card),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+               // Image Grid/Stack
+               // For now, simple list view inside
+               _buildImages(context),
+               
+               const SizedBox(height: 16),
+               
+               // Actions
+               Row(
+                 children: [
+                   Expanded(
+                     child: _ActionButton(
+                       label: "Save to Closet",
+                       icon: Icons.checkroom,
+                       onTap: () => _saveOutfit(context),
+                     ),
+                   ),
+                   const SizedBox(width: 12),
+                   Expanded( // Added Expanded for equal width buttons
+                     child: _ActionButton(
+                       label: "Hamper",
+                       icon: Icons.local_laundry_service,
+                       onTap: () => _sendToHamper(context),
+                       isPrimary: false,
+                     ),
+                   ),
+                 ],
+               )
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildImages(BuildContext context) {
+    if (imagePaths.isEmpty) return const SizedBox.shrink();
+    
+    // If only one image, show it full size
+    if (imagePaths.length == 1) {
+      return Container(
+        height: 300,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          color: Colors.black12,
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: _buildImage(imagePaths.first),
+        ),
+      );
+    }
+
+    // Grid layout for multiple images
+    return Container(
+      // Constrain height based on row count (approx 150px per row) to avoid infinite height in Column
+      height: (imagePaths.length / 2).ceil() * 160.0, 
+      constraints: const BoxConstraints(maxHeight: 400), // Max height limit
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: Colors.black12,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: GridView.builder(
+          padding: const EdgeInsets.all(8),
+          physics: imagePaths.length <= 2 ? const NeverScrollableScrollPhysics() : null, // Disable scroll for few items
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 0.8, // Taller items
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+          ),
+          itemCount: imagePaths.length,
+          itemBuilder: (context, index) {
+            return Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: _buildImage(imagePaths[index]),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImage(String path) {
+    if (path.startsWith('http')) {
+      return CachedNetworkImage(
+        imageUrl: path,
+        fit: BoxFit.contain,
+        placeholder: (context, url) => const Center(child: CircularProgressIndicator()),
+        errorWidget: (context, url, error) => const Icon(Icons.error, color: Colors.white),
+      );
+    }
+    return Image.asset(path, fit: BoxFit.contain);
+  }
+
+  Future<void> _saveOutfit(BuildContext context) async {
+    final dataService = context.read<DataService>();
+    final items = dataService.clothingItems
+        .where((item) => itemIds.contains(item.id))
+        .toList();
+
+    if (items.isNotEmpty) {
+      final now = DateTime.now();
+      final name = outfitName ?? "${now.month}-${now.day} Look";
+      
+      final newOutfit = Outfit(
+        id: now.millisecondsSinceEpoch.toString(),
+        name: name,
+        items: items,
+        savedDate: now,
+      );
+      dataService.addOutfit(newOutfit);
+    }
+  }
+
+  Future<void> _sendToHamper(BuildContext context) async {
+    final dataService = context.read<DataService>();
+    for (var id in itemIds) {
+      await dataService.markItemDirty(id);
+    }
+  }
 }
 
-class _OutfitPreviewState extends State<OutfitPreview> {
-  bool _isSelected = false;
+class _ActionButton extends StatefulWidget {
+  final String label;
+  final IconData icon;
+  final Future<void> Function() onTap;
+  final bool isPrimary;
+
+  const _ActionButton({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+    this.isPrimary = true,
+  });
+
+  @override
+  State<_ActionButton> createState() => _ActionButtonState();
+}
+
+class _ActionButtonState extends State<_ActionButton> {
+  bool _isSuccess = false;
+
+  void _handleTap() async {
+    if (_isSuccess) return;
+
+    await widget.onTap();
+
+    if (mounted) {
+      setState(() {
+        _isSuccess = true;
+      });
+
+      // Revert back after 1 second
+      Future.delayed(const Duration(seconds: 1), () {
+        if (mounted) {
+          setState(() {
+            _isSuccess = false;
+          });
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 12.0),
-      decoration: _isSelected ? BoxDecoration(
-        border: Border.all(color: Theme.of(context).primaryColor, width: 2),
-        borderRadius: BorderRadius.circular(12),
-      ) : null,
-      padding: _isSelected ? const EdgeInsets.all(8.0) : EdgeInsets.zero,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header for outfit preview
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8.0),
-            child: Text(
-              'Recommended Outfit:',
-              style: Theme.of(context).textTheme.labelLarge,
-            ),
-          ),
-          // Display outfit images in a column
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(), // Disable scrolling within this list
-            itemCount: widget.imagePaths.length,
-            itemBuilder: (context, index) {
-              final imagePath = widget.imagePaths[index];
-              final isNetworkImage = imagePath.startsWith('http');
-              final itemId = widget.itemIds.length > index ? widget.itemIds[index] : null;
-
-              // Fetch item details if selected to show more info
-              String? itemDescription;
-               if (_isSelected && itemId != null) {
-                  final dataService = context.read<DataService>();
-                   try {
-                     final item = dataService.clothingItems.firstWhere((i) => i.id == itemId);
-                     itemDescription = "${item.type} - ${item.color}";
-                   } catch (_) {}
-               }
-
-
-              return Card(
-                clipBehavior: Clip.antiAlias,
-                margin: const EdgeInsets.only(bottom: 8.0),
-                child: Column(
+    return GestureDetector(
+      onTap: _handleTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          color: widget.isPrimary ? AppColors.glassFill : Colors.transparent,
+          border: Border.all(color: _isSuccess ? AppColors.accent : AppColors.glassBorder),
+          borderRadius: BorderRadius.circular(AppRadius.pill),
+        ),
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+          child: _isSuccess
+              ? Row(
+                  key: const ValueKey("success"),
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Container(
-                      constraints: const BoxConstraints(
-                        maxHeight: 175, // Limit the height to prevent very tall images
-                      ),
-                      width: double.infinity,
-                      child: isNetworkImage
-                          ? CachedNetworkImage(
-                              imageUrl: imagePath,
-                              fit: BoxFit.contain,
-                              placeholder: (context, url) => const SizedBox(
-                                height: 100,
-                                child: Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                              ),
-                              errorWidget: (BuildContext context, String url, dynamic error) {
-                                return const SizedBox(
-                                  height: 100,
-                                  child: Center(
-                                    child: Icon(Icons.image_not_supported),
-                                  ),
-                                );
-                              },
-                            )
-                          : Image.asset(
-                              imagePath,
-                              fit: BoxFit.contain,
-                              errorBuilder: (context, error, stackTrace) {
-                                return const SizedBox(
-                                  height: 100,
-                                  child: Center(
-                                    child: Icon(Icons.image_not_supported),
-                                  ),
-                                );
-                              },
-                            ),
+                    Icon(Icons.check, size: 18, color: AppColors.accent),
+                    const SizedBox(width: 8),
+                    Text(
+                      "Done",
+                      style: AppText.bodyBold.copyWith(fontSize: 12, color: AppColors.accent),
                     ),
-                    if (_isSelected && itemDescription != null)
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text(itemDescription, style: Theme.of(context).textTheme.bodyMedium),
-                      ),
+                  ],
+                )
+              : Row(
+                  key: const ValueKey("normal"),
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(widget.icon, size: 18, color: widget.isPrimary ? Colors.white : AppColors.textSecondary),
+                    const SizedBox(width: 8),
+                    Text(
+                      widget.label,
+                      style: widget.isPrimary 
+                          ? AppText.bodyBold.copyWith(fontSize: 12) 
+                          : AppText.body.copyWith(fontSize: 12),
+                    ),
                   ],
                 ),
-              );
-            },
-          ),
-          if (widget.itemIds.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: SizedBox(
-                width: double.infinity,
-                child: _isSelected 
-                  ? Column(
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                onPressed: () {
-                                  final dataService = context.read<DataService>();
-                                  final items = dataService.clothingItems
-                                      .where((item) => widget.itemIds.contains(item.id))
-                                      .toList();
-
-                                  if (items.isNotEmpty) {
-                                    final now = DateTime.now();
-                                    final newOutfit = Outfit(
-                                      id: now.millisecondsSinceEpoch.toString(),
-                                      name: "${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}-${now.year}",
-                                      items: items,
-                                      savedDate: now,
-                                    );
-                                    dataService.addOutfit(newOutfit);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Outfit saved to closet!')),
-                                    );
-                                  } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Could not find these items in your closet.')),
-                                    );
-                                  }
-                                },
-                                icon: const Icon(Icons.checkroom),
-                                label: const Text('Save Outfit'),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
-                                  foregroundColor: Theme.of(context).colorScheme.onSecondaryContainer,
-                                ),
-                                onPressed: () async {
-                                   final dataService = context.read<DataService>();
-                                   for (var id in widget.itemIds) {
-                                     await dataService.markItemDirty(id);
-                                   }
-                                   if (context.mounted) {
-                                     ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(content: Text('Sent to Hamper!')),
-                                     );
-                                     // Optionally reset state or hide
-                                     setState(() {
-                                       _isSelected = false;
-                                     });
-                                   }
-                                },
-                                icon: const Icon(Icons.local_laundry_service),
-                                label: const Text('To Hamper'),
-                              ),
-                            ),
-                          ],
-                        ),
-                        TextButton(
-                           onPressed: () {
-                             setState(() {
-                               _isSelected = false;
-                             });
-                           },
-                           child: const Text("Cancel Selection"),
-                        )
-                      ],
-                    )
-                  : ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          _isSelected = true;
-                        });
-                      },
-                      child: const Text('Select Outfit'),
-                    ),
-              ),
-            ),
-        ],
+        ),
       ),
     );
   }

@@ -37,8 +37,8 @@ class MockAIService extends ChangeNotifier implements AIService {
   }
 
   @override
-  ({String cleanText, List<String> imagePaths, List<String> itemIds}) processResponse(String text) {
-    return (cleanText: text, imagePaths: <String>[], itemIds: <String>[]);
+  ({String cleanText, List<String> imagePaths, List<String> itemIds, String? outfitName}) processResponse(String text) {
+    return (cleanText: text, imagePaths: <String>[], itemIds: <String>[], outfitName: null);
   }
 
   @override
@@ -209,7 +209,7 @@ void main() {
 
     mockAIService.addBotMessage(
       'Here is an outfit',
-      imagePaths: ['assets/images/clothes/shirt.png'],
+      imagePaths: ['assets/images/logo.png'],
     );
 
     await tester.pumpWidget(
@@ -220,7 +220,9 @@ void main() {
           Provider<WeatherService>.value(value: mockWeatherService),
         ],
         child: const MaterialApp(
-          home: AIChatPage(),
+          home: Scaffold(
+            body: AIChatPage(),
+          ),
         ),
       ),
     );

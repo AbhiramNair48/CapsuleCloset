@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/clothing_item.dart';
+import 'glass_container.dart';
 
 /// Widget for displaying a clothing item card in the grid with a smooth entry animation
 class ClothingItemCard extends StatefulWidget {
@@ -58,12 +59,11 @@ class _ClothingItemCardState extends State<ClothingItemCard> with SingleTickerPr
       opacity: _fadeAnimation,
       child: ScaleTransition(
         scale: _scaleAnimation,
-        child: Card(
-          elevation: 2,
-          clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          child: InkWell(
-            onTap: widget.onTap,
+        child: GestureDetector(
+          onTap: widget.onTap,
+          child: GlassContainer(
+            borderRadius: BorderRadius.circular(12),
+            padding: EdgeInsets.zero, // Important for image to fill
             child: Stack(
               children: [
                 SizedBox.expand(
@@ -74,16 +74,16 @@ class _ClothingItemCardState extends State<ClothingItemCard> with SingleTickerPr
                         memCacheWidth: 300,
                         memCacheHeight: 300,
                         placeholder: (context, url) => Container(
-                          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                          child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                          color: Colors.white10,
+                          child: const Center(child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
                         ),
                         errorWidget: (context, url, error) {
                           return Container(
-                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                            color: Colors.white10,
                             child: Icon(
                               Icons.image_not_supported,
                               size: _errorIconSize,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              color: Colors.white54,
                             ),
                           );
                         },
@@ -93,11 +93,11 @@ class _ClothingItemCardState extends State<ClothingItemCard> with SingleTickerPr
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
-                            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                            color: Colors.white10,
                             child: Icon(
                               Icons.image_not_supported,
                               size: _errorIconSize,
-                              color: Theme.of(context).colorScheme.onSurfaceVariant,
+                              color: Colors.white54,
                             ),
                           );
                         },
@@ -106,14 +106,19 @@ class _ClothingItemCardState extends State<ClothingItemCard> with SingleTickerPr
                 Positioned(
                   top: 4,
                   right: 4,
-                  child: IconButton(
-                    icon: const Icon(Icons.more_vert, size: 20),
-                    visualDensity: VisualDensity.compact,
-                    style: IconButton.styleFrom(
-                      backgroundColor: Colors.black.withValues(alpha: 0.3),
-                      foregroundColor: Colors.white,
+                  child: GlassContainer(
+                    width: 32,
+                    height: 32,
+                    borderRadius: BorderRadius.circular(16),
+                    blur: 10,
+                    color: Colors.black.withValues(alpha: 0.4),
+                    padding: EdgeInsets.zero,
+                    child: IconButton(
+                      icon: const Icon(Icons.more_vert, size: 18),
+                      padding: EdgeInsets.zero,
+                      color: Colors.white,
+                      onPressed: widget.onTap,
                     ),
-                    onPressed: widget.onTap,
                   ),
                 ),
               ],

@@ -8,6 +8,8 @@ import 'delete_clothing_items_screen.dart';
 import 'hamper_screen.dart';
 import '../models/clothing_item.dart';
 import '../services/navigation_service.dart';
+import '../widgets/glass_container.dart';
+import '../theme/app_design.dart';
 
 class ClothesTabScreen extends StatefulWidget {
   const ClothesTabScreen({super.key});
@@ -58,15 +60,34 @@ class _ClothesTabScreenState extends State<ClothesTabScreen> {
             padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 8.0),
             child: Row(
               children: [
-                IconButton.filledTonal(
-                  onPressed: () {
+                GestureDetector(
+                  onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const HamperScreen()),
+                      PageRouteBuilder(
+                        pageBuilder: (context, animation, secondaryAnimation) => const HamperScreen(),
+                        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                          const begin = Offset(0.0, 1.0); // Slide up
+                          const end = Offset.zero;
+                          const curve = Curves.ease;
+
+                          var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+
+                          return SlideTransition(
+                            position: animation.drive(tween),
+                            child: FadeTransition(opacity: animation, child: child),
+                          );
+                        },
+                      ),
                     );
                   },
-                  icon: const Icon(Icons.local_laundry_service),
-                  tooltip: 'Hamper',
+                  child: GlassContainer(
+                    width: 44,
+                    height: 44,
+                    borderRadius: BorderRadius.circular(12),
+                    color: AppColors.glassFill.withValues(alpha: 0.1),
+                    child: const Icon(Icons.local_laundry_service, color: Colors.white, size: 20),
+                  ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -78,20 +99,41 @@ class _ClothesTabScreenState extends State<ClothesTabScreen> {
                       final isSelected = _selectedFilter == filter || (_selectedFilter == null && filter == 'All');
                       return Padding(
                         padding: const EdgeInsets.only(right: 8.0),
-                        child: ChoiceChip(
-                          label: Text(filter),
-                          selected: isSelected,
-                          onSelected: (selected) {
+                        child: GestureDetector(
+                          onTap: () {
                             setState(() {
                               if (filter == 'All') {
                                 _selectedFilter = null;
                                 context.read<DataService>().filterClothingItemsByType(null);
                               } else {
-                                _selectedFilter = selected ? filter : null;
-                                context.read<DataService>().filterClothingItemsByType(_selectedFilter);
+                                _selectedFilter = isSelected ? null : filter; // Toggle off if already selected unless it's 'All' switching
+                                if (_selectedFilter == null) {
+                                   context.read<DataService>().filterClothingItemsByType(null);
+                                } else {
+                                   context.read<DataService>().filterClothingItemsByType(_selectedFilter);
+                                }
                               }
                             });
                           },
+                          child: GlassContainer(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            borderRadius: BorderRadius.circular(20),
+                            color: isSelected 
+                                ? AppColors.accent.withValues(alpha: 0.3) 
+                                : AppColors.glassFill.withValues(alpha: 0.1),
+                            border: Border.all(
+                              color: isSelected ? AppColors.accent : Colors.white24,
+                            ),
+                            child: Center(
+                              child: Text(
+                                filter,
+                                style: TextStyle(
+                                  color: isSelected ? Colors.white : Colors.white70,
+                                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
                       );
                     },
@@ -104,13 +146,16 @@ class _ClothesTabScreenState extends State<ClothesTabScreen> {
             child: Builder(
               builder: (context) {
                 if (dataService.clothingItems.isEmpty) {
-                  return EmptyStateWidget(
-                    icon: Icons.checkroom_outlined,
-                    message: 'No clothing items yet',
-                    buttonText: 'Add Item',
-                    onPressed: () {
-                      context.read<NavigationService>().setIndex(2); // Switch to Add tab
-                    },
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 200.0), // Further adjusted for visual center
+                    child: EmptyStateWidget(
+                      icon: Icons.checkroom_outlined,
+                      message: '', 
+                      buttonText: 'Add Your First Item!',
+                      onPressed: () {
+                        context.read<NavigationService>().setIndex(2); 
+                      },
+                    ),
                   );
                 }
                 
@@ -128,16 +173,39 @@ class _ClothesTabScreenState extends State<ClothesTabScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const DeleteClothingItemsScreen(),
-            ),
-          );
-        },
-        child: const Icon(Icons.delete_outline),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 100.0), // Lift above custom nav bar
+        child: GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              PageRouteBuilder(
+                pageBuilder: (context, animation, secondaryAnimation) => const DeleteClothingItemsScreen(),
+                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                  const begin = Offset(0.0, 1.0); // Slide up
+                  const end = Offset.zero;
+                  const curve = Curves.ease;
+
+                  var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+
+                  return SlideTransition(
+                    position: animation.drive(tween),
+                    child: FadeTransition(opacity: animation, child: child),
+                  );
+                },
+              ),
+            );
+          },
+          child: GlassContainer(
+            width: 56,
+            height: 56,
+            borderRadius: BorderRadius.circular(28),
+            blur: 20,
+            color: AppColors.glassFill.withValues(alpha: 0.2),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+            child: const Icon(Icons.delete_outline, color: Colors.white),
+          ),
+        ),
       ),
     );
   }

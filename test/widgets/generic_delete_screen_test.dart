@@ -102,7 +102,7 @@ void main() {
       expect(find.byIcon(Icons.check), findsOneWidget);
 
       // Verify FAB appears
-      final fabFinder = find.byType(FloatingActionButton);
+      final fabFinder = find.text('Delete (1)');
       expect(fabFinder, findsOneWidget);
       expect(find.text('Delete (1)'), findsOneWidget);
 

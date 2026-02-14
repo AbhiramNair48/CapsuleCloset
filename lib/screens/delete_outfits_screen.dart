@@ -4,6 +4,7 @@ import '../services/data_service.dart';
 import '../widgets/outfit_card.dart';
 import '../widgets/generic_delete_screen.dart';
 import '../models/outfit.dart';
+import '../theme/app_design.dart';
 
 class DeleteOutfitsScreen extends StatelessWidget {
   const DeleteOutfitsScreen({super.key});
@@ -31,16 +32,15 @@ class DeleteOutfitsScreen extends StatelessWidget {
           },
           itemBuilder: (context, item, isSelected, onTap) {
             return Container(
-              decoration: isSelected
-                  ? BoxDecoration(
-                      border: Border.all(
-                        color: Theme.of(context).colorScheme.primary,
-                        width: 3.0,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    )
-                  : null,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: isSelected ? AppColors.accent : Colors.transparent,
+                  width: 3.0,
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: OutfitCard(
+                key: ValueKey(item.id),
                 outfit: item,
                 onTap: onTap,
               ),

@@ -315,7 +315,15 @@ class DataService extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         final List<dynamic> usersJson = jsonDecode(response.body);
-        return usersJson.cast<Map<String, dynamic>>();
+        final currentUserId = _authService?.currentUser?['id']?.toString();
+        
+        var users = usersJson.cast<Map<String, dynamic>>();
+        
+        if (currentUserId != null) {
+           users = users.where((user) => user['id'].toString() != currentUserId).toList();
+        }
+        
+        return users;
       } else {
         if (kDebugMode) {
           print('Failed to search users: ${response.statusCode}');

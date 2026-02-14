@@ -4,6 +4,7 @@ import '../services/data_service.dart';
 import '../widgets/generic_delete_screen.dart';
 import '../models/friend.dart';
 import '../widgets/friend_card.dart';
+import '../theme/app_design.dart';
 
 class DeleteFriendsScreen extends StatelessWidget {
   const DeleteFriendsScreen({super.key});
@@ -32,16 +33,15 @@ class DeleteFriendsScreen extends StatelessWidget {
           },
           itemBuilder: (context, item, isSelected, onTap) {
             return Container(
-              decoration: isSelected
-                  ? BoxDecoration(
-                      border: Border.all(
-                        color: Theme.of(context).colorScheme.primary,
-                        width: 3.0,
-                      ),
-                      borderRadius: BorderRadius.circular(15),
-                    )
-                  : null,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: isSelected ? AppColors.accent : Colors.transparent,
+                  width: 3.0,
+                ),
+                borderRadius: BorderRadius.circular(15),
+              ),
               child: FriendCard(
+                key: ValueKey(item.id),
                 friend: item,
                 onTap: onTap,
               ),

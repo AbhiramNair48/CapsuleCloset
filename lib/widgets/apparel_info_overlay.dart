@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/clothing_item.dart';
 import '../services/data_service.dart';
+import '../theme/app_design.dart';
+import 'glass_container.dart';
 
 /// Widget for displaying apparel information in a bottom sheet overlay
 class ApparelInfoOverlay extends StatefulWidget {
@@ -31,11 +33,10 @@ class ApparelInfoOverlayState extends State<ApparelInfoOverlay> {
   static const double _initialChildSize = 0.8;
   static const double _minChildSize = 0.4;
   static const double _maxChildSize = 0.9;
-  static const double _borderRadius = 16.0;
+  static const double _borderRadius = 30.0;
   static const double _padding = 24.0;
   static const double _spacing = 16.0;
   static const double _fieldSpacing = 8.0;
-  static const double _textFieldBorderRadius = 8.0;
 
   @override
   void initState() {
@@ -82,12 +83,13 @@ class ApparelInfoOverlayState extends State<ApparelInfoOverlay> {
     final mediaQuery = MediaQuery.of(context);
     
     return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E1E), // Dark background for the sheet
+        borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(_borderRadius),
           topRight: Radius.circular(_borderRadius),
         ),
+        border: Border.all(color: Colors.white24, width: 1),
       ),
       padding: const EdgeInsets.all(_padding),
       margin: EdgeInsets.only(
@@ -109,12 +111,10 @@ class ApparelInfoOverlayState extends State<ApparelInfoOverlay> {
                   children: [
                     Text(
                       'Apparel Information',
-                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      style: AppText.header,
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close),
+                      icon: const Icon(Icons.close, color: Colors.white),
                       onPressed: widget.onClose,
                     ),
                   ],
@@ -131,35 +131,41 @@ class ApparelInfoOverlayState extends State<ApparelInfoOverlay> {
                 _buildTextField('Description', _descriptionController, maxLines: 4),
                 const SizedBox(height: _padding),
                 if (!widget.isReadOnly)
-                  SwitchListTile(
-                    title: const Text('Make Public'),
-                    subtitle: const Text('Allow friends to see this item.'),
-                    value: _isPublic,
-                    onChanged: (bool value) {
-                      setState(() {
-                        _isPublic = value;
-                      });
-                      context
-                          .read<DataService>()
-                          .updateClothingItemPublicStatus(widget.item.id, value);
-                    },
+                  GlassContainer(
+                    borderRadius: BorderRadius.circular(16),
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                    child: SwitchListTile(
+                      title: Text('Make Public', style: AppText.bodyBold),
+                      subtitle: Text('Allow friends to see this item.', style: AppText.label),
+                      value: _isPublic,
+                      activeTrackColor: AppColors.accent,
+                      trackColor: WidgetStateProperty.resolveWith((states) => 
+                        states.contains(WidgetState.selected) ? AppColors.accent.withValues(alpha: 0.5) : Colors.grey.withValues(alpha: 0.3)
+                      ),
+                      onChanged: (bool value) {
+                        setState(() {
+                          _isPublic = value;
+                        });
+                        context
+                            .read<DataService>()
+                            .updateClothingItemPublicStatus(widget.item.id, value);
+                      },
+                    ),
                   ),
                 if (!widget.isReadOnly) ...[
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _saveChanges,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(_textFieldBorderRadius),
+                  const SizedBox(height: _padding),
+                  GestureDetector(
+                    onTap: _saveChanges,
+                    child: GlassContainer(
+                      height: 56,
+                      borderRadius: BorderRadius.circular(28),
+                      color: AppColors.accent.withValues(alpha: 0.2),
+                      border: Border.all(color: AppColors.accent.withValues(alpha: 0.5)),
+                      child: Center(
+                        child: Text(
+                          'Save Changes',
+                          style: AppText.bodyBold.copyWith(fontSize: 16),
                         ),
-                      ),
-                      child: const Text(
-                        'Save Changes',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -179,21 +185,31 @@ class ApparelInfoOverlayState extends State<ApparelInfoOverlay> {
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.w500,
-              ),
+          style: AppText.label.copyWith(
+            color: Colors.white70,
+            fontSize: 14,
+          ),
         ),
         const SizedBox(height: _fieldSpacing),
-        TextField(
-          controller: controller,
-          maxLines: maxLines,
-          readOnly: widget.isReadOnly,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(_textFieldBorderRadius),
+        GlassContainer(
+          borderRadius: BorderRadius.circular(12),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          color: Colors.white.withValues(alpha: 0.05),
+          child: TextField(
+            controller: controller,
+            maxLines: maxLines,
+            readOnly: widget.isReadOnly,
+            style: AppText.body.copyWith(color: Colors.white),
+            cursorColor: AppColors.accent,
+            decoration: const InputDecoration(
+              border: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              errorBorder: InputBorder.none,
+              disabledBorder: InputBorder.none,
+              contentPadding: EdgeInsets.symmetric(vertical: 12),
+              isDense: true,
             ),
-            filled: true,
-            fillColor: Colors.grey[100],
           ),
         ),
       ],

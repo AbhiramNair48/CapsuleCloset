@@ -11,6 +11,7 @@ class Message {
   final bool isUser;
   final List<String>? imagePaths;
   final List<String>? itemIds;
+  final String? outfitName; // Store the extracted outfit name
   bool hasAnimated; // Track if the typing animation has already played
 
   Message({
@@ -18,6 +19,7 @@ class Message {
     required this.isUser,
     this.imagePaths,
     this.itemIds,
+    this.outfitName,
     this.hasAnimated = false,
   });
 }
@@ -105,6 +107,7 @@ class AIService extends ChangeNotifier {
           isUser: false, 
           imagePaths: extractionResult.imagePaths,
           itemIds: extractionResult.itemIds,
+          outfitName: extractionResult.outfitName,
         ));
       } else {
         _messages.add(Message(text: "I'm sorry, I didn't understand that.", isUser: false));
@@ -152,11 +155,12 @@ class AIService extends ChangeNotifier {
     _chatSession = _model!.startChat(history: history);
   }
 
-  /// Processes the response to extract IDs and clean the text.
+  /// Processes the response to extract IDs, Outfit Title, and clean the text.
   @visibleForTesting
-  ({String cleanText, List<String> imagePaths, List<String> itemIds}) processResponse(String text) {
+  ({String cleanText, List<String> imagePaths, List<String> itemIds, String? outfitName}) processResponse(String text) {
     final List<String> paths = [];
     final List<String> ids = [];
+    String? outfitName;
     
     // Regex to find <<ID:some_id>>
     final RegExp idRegex = RegExp(r'<<ID:([^>]+)>>');
@@ -203,10 +207,18 @@ class AIService extends ChangeNotifier {
       }
     }
 
-    // 3. Clean tags from the ENTIRE text
+    // 3. Extract Outfit Title
+    // Assumes format: "**Outfit Title:** Casual Date..." or "**Outfit Title** Casual Date..."
+    final RegExp titleRegex = RegExp(r'\*\*Outfit Title:?\*\*\s*([^\n]+)');
+    final titleMatch = titleRegex.firstMatch(text);
+    if (titleMatch != null) {
+      outfitName = titleMatch.group(1)?.trim();
+    }
+
+    // 4. Clean tags from the ENTIRE text
     String cleanText = text.replaceAll(idRegex, '');
 
-    return (cleanText: cleanText, imagePaths: paths, itemIds: ids);
+    return (cleanText: cleanText, imagePaths: paths, itemIds: ids, outfitName: outfitName);
   }
 
   /// Resets the chat by clearing messages and starting a new session
@@ -228,6 +240,7 @@ class AIService extends ChangeNotifier {
           isUser: false,
           imagePaths: extractionResult.imagePaths,
           itemIds: extractionResult.itemIds,
+          outfitName: extractionResult.outfitName,
         ));
         notifyListeners();
       }
