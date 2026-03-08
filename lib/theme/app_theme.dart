@@ -4,11 +4,11 @@ import 'package:google_fonts/google_fonts.dart';
 class AppTheme {
   static ThemeData get lightTheme {
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: Colors.pink,
+      seedColor: const Color(0xFFE5B8B8), // Rose Pink
       brightness: Brightness.light,
-      primary: Colors.pink,
+      primary: const Color(0xFFE5B8B8),
       onPrimary: Colors.white,
-      secondary: Colors.pinkAccent,
+      secondary: const Color(0xFFE5B8B8),
       onSecondary: Colors.white,
       tertiary: Colors.teal, // Adding a tertiary color for variety
     );
@@ -16,7 +16,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: Colors.pink.shade50, // Consistent background
+      scaffoldBackgroundColor: const Color(0xFFFFF0F5), // Lavender Blush (close to Pink 50)
       
       // Typography
       textTheme: TextTheme(
@@ -146,11 +146,11 @@ class AppTheme {
 
   static ThemeData get darkTheme {
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: Colors.pink,
+      seedColor: const Color(0xFFE5B8B8), // Rose Pink
       brightness: Brightness.dark,
-      primary: Colors.pink,
+      primary: const Color(0xFFE5B8B8),
       onPrimary: Colors.white,
-      secondary: Colors.pinkAccent,
+      secondary: const Color(0xFFE5B8B8),
       onSecondary: Colors.white,
       tertiary: Colors.teal, // Keep for consistency
     );

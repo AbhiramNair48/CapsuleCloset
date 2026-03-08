@@ -32,6 +32,7 @@ class DataService extends ChangeNotifier {
   List<ClothingItem> _filteredClothingItems = [];
   List<PendingFriendRequest> _pendingFriendRequests = [];
   UserProfile _userProfile = const UserProfile();
+  String? _currentTypeFilter;
 
   List<ClothingItem> get clothingItems => _clothingItems;
   List<Outfit> get outfits => _outfits;
@@ -547,7 +548,7 @@ class DataService extends ChangeNotifier {
   /// Add a new clothing item
   void addClothingItem(ClothingItem item) {
     _clothingItems.add(item);
-    _filteredClothingItems = List.from(_clothingItems);
+    filterClothingItemsByType(_currentTypeFilter);
     _itemChangeController.add(null);
     notifyListeners();
   }
@@ -572,7 +573,7 @@ class DataService extends ChangeNotifier {
 
       if (response.statusCode == 200) {
         _clothingItems.removeWhere((item) => item.id == id);
-        _filteredClothingItems = List.from(_clothingItems);
+        filterClothingItemsByType(_currentTypeFilter);
         _itemChangeController.add(null);
         notifyListeners();
       } else {
@@ -601,7 +602,7 @@ class DataService extends ChangeNotifier {
         final index = _clothingItems.indexWhere((item) => item.id == updatedItem.id);
         if (index != -1) {
           _clothingItems[index] = updatedItem;
-          _filteredClothingItems = List.from(_clothingItems);
+          filterClothingItemsByType(_currentTypeFilter);
           notifyListeners();
         }
       } else {
@@ -618,6 +619,7 @@ class DataService extends ChangeNotifier {
 
   /// Filter clothing items by type
   void filterClothingItemsByType(String? type) {
+    _currentTypeFilter = type;
     if (type == null || type.isEmpty) {
       _filteredClothingItems = _clothingItems.where((item) => item.isClean).toList();
     } else {
@@ -629,9 +631,43 @@ class DataService extends ChangeNotifier {
   }
 
   /// Add a new outfit
-  void addOutfit(Outfit outfit) {
+  Future<void> addOutfit(Outfit outfit) async {
     _outfits.add(outfit);
     notifyListeners();
+    await _saveOutfitToBackend(outfit);
+  }
+
+  Future<void> _saveOutfitToBackend(Outfit outfit) async {
+    try {
+      final userId = _authService?.currentUser?['id'];
+      if (userId == null) return;
+
+      final url = Uri.parse('${AppConstants.baseUrl}/outfits');
+      final response = await _client.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'user_id': userId,
+          'outfit_name': outfit.name,
+          'item_ids': outfit.items.map((item) => item.id).toList(),
+        }),
+      );
+
+      if (response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        // Update the local outfit with the real ID from backend
+        final newId = data['id'];
+        final index = _outfits.indexOf(outfit);
+        if (index != -1) {
+          _outfits[index] = outfit.copyWith(id: newId);
+          notifyListeners();
+        }
+      } else {
+        if (kDebugMode) print('Failed to save outfit: ${response.statusCode}');
+      }
+    } catch (e) {
+      if (kDebugMode) print('Error saving outfit: $e');
+    }
   }
 
   static const int _feedbackPopupAfterCreations = 10;

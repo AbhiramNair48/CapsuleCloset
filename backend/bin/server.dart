@@ -80,6 +80,7 @@ Future<void> main() async {
   app.delete('/closet/<itemId>', (Request request) => _handleRequest(request, apiHandlers.handleClosetDelete));
   app.get('/closet', (Request request) => _handleRequest(request, apiHandlers.handleGetCloset));
   app.get('/outfits', (Request request) => _handleRequest(request, apiHandlers.handleGetOutfits));
+  app.post('/outfits', (Request request) => _handleRequest(request, apiHandlers.handleCreateOutfit));
   app.get('/images/<filename>', (Request request) => _handleRequest(request, apiHandlers.handleServeImage));
 
   final handler = Pipeline()

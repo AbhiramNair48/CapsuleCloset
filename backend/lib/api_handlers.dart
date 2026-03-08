@@ -662,6 +662,49 @@ class ApiHandlers {
     }
   }
 
+  Future<Response> handleCreateOutfit(Request request) async {
+    try {
+      final content = await request.readAsString();
+      final data = jsonDecode(content) as Map<String, dynamic>;
+
+      final userId = data['user_id'];
+      final outfitName = data['outfit_name'];
+      final itemIds = data['item_ids']; // List of item IDs
+
+      if (userId == null || outfitName == null) {
+        return Response.badRequest(body: 'Missing required fields');
+      }
+
+      // 1. Insert Outfit
+      final insertResult = await pool.execute(
+        'INSERT INTO outfits (user_id, outfit_name, description) VALUES (:user_id, :outfit_name, :description)',
+        {
+          "user_id": userId,
+          "outfit_name": outfitName,
+          "description": data['description'] ?? '',
+        },
+      );
+      final outfitId = insertResult.lastInsertID;
+
+      // 2. Insert Items
+      if (itemIds != null && (itemIds as List).isNotEmpty) {
+        final values = itemIds.map((id) => '($outfitId, $id)').join(',');
+        await pool.execute(
+          'INSERT INTO outfit_items (outfit_id, clothing_item_id) VALUES $values'
+        );
+      }
+
+      return Response(201, body: jsonEncode({
+        'id': outfitId.toString(),
+        'message': 'Outfit created successfully'
+      }));
+
+    } catch (e) {
+      print('Error creating outfit: $e');
+      return Response.internalServerError(body: 'Error creating outfit: $e');
+    }
+  }
+
   Future<Response> handleServeImage(Request request) async {
     final filename = request.params['filename'];
 
