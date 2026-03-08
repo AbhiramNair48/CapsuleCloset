@@ -127,7 +127,7 @@ class MockDataService extends ChangeNotifier implements DataService {
   void filterClothingItemsByType(String? type) {}
   
   @override
-  void addOutfit(Outfit outfit) {}
+  Future<void> addOutfit(Outfit outfit) async {}
   
   @override
   void updateOutfit(Outfit updatedOutfit) {}

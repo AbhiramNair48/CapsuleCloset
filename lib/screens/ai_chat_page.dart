@@ -207,7 +207,7 @@ class _AIChatPageState extends State<AIChatPage> {
 
         // 4. Input Pill (Floating at bottom)
         Positioned(
-          bottom: 120, // Positioned above the Bottom Nav Bar (which has height ~100 including padding)
+          bottom: MediaQuery.of(context).viewInsets.bottom > 0 ? 16 : 120, // Adjust based on keyboard
           left: 20,
           right: 20,
           child: _InputPill(

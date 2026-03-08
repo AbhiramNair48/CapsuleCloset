@@ -16,10 +16,11 @@ class Outfit {
 
   /// Creates a copy of this outfit with updated fields
   Outfit copyWith({
+    String? id,
     String? name,
   }) {
     return Outfit(
-      id: id,
+      id: id ?? this.id,
       name: name ?? this.name,
       items: items,
       savedDate: savedDate,
