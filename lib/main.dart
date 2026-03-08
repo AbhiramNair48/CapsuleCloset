@@ -50,7 +50,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AIService()),
         ChangeNotifierProvider(create: (_) => ThemeService()),
         ChangeNotifierProvider(create: (_) => NavigationService()),
-        Provider(create: (_) => WeatherService()),
+        ChangeNotifierProvider(create: (_) => WeatherService()),
       ],
       child: Consumer<ThemeService>(
         builder: (context, themeService, child) {

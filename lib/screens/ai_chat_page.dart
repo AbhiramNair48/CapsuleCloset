@@ -24,21 +24,26 @@ class AIChatPage extends StatefulWidget {
 class _AIChatPageState extends State<AIChatPage> {
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final FocusNode _focusNode = FocusNode();
   late AIService _aiService;
   StreamSubscription? _itemSubscription;
+  bool _isKeyboardVisible = false;
 
   @override
   void initState() {
     super.initState();
+    _focusNode.addListener(_onFocusChange);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _aiService = context.read<AIService>();
       final dataService = context.read<DataService>();
+      final weatherService = context.read<WeatherService>();
 
       _itemSubscription = dataService.itemChangeStream.listen((_) {
         if (mounted) _resetChat();
       });
 
       _aiService.addListener(_scrollDown);
+      weatherService.addListener(_onWeatherChanged);
       
       // 1. Show welcome message immediately (static)
       _aiService.startChat(); 
@@ -46,6 +51,22 @@ class _AIChatPageState extends State<AIChatPage> {
       // 2. Fetch context (weather/closet) in background and update silently
       _initializeChatWithWeather().then((_) => _checkForDailyOutfit());
     });
+  }
+
+  void _onFocusChange() {
+    if (_focusNode.hasFocus != _isKeyboardVisible) {
+      setState(() {
+        _isKeyboardVisible = _focusNode.hasFocus;
+      });
+    }
+  }
+
+  void _onWeatherChanged() {
+    if (!mounted) return;
+    final weatherService = context.read<WeatherService>();
+    if (weatherService.currentWeather.isNotEmpty) {
+      _initializeChatWithWeather(); // Refresh AI context with new weather
+    }
   }
 
   Future<void> _checkForDailyOutfit() async {
@@ -63,16 +84,16 @@ class _AIChatPageState extends State<AIChatPage> {
 
   Future<void> _initializeChatWithWeather() async {
     final dataService = context.read<DataService>();
+    final weatherService = context.read<WeatherService>();
     String? weatherString;
-    try {
-      final weatherService = context.read<WeatherService>();
-      final weatherData = await weatherService.getCurrentWeather();
-      if (weatherData.isNotEmpty) {
-        weatherString = "Temp: ${weatherData['current_temp']}${weatherData['unit']}, "
-            "Hi: ${weatherData['max_temp']}, Lo: ${weatherData['min_temp']}";
-      }
-    } catch (e) {
-      debugPrint("Weather fetch failed: $e");
+    
+    final weatherData = weatherService.currentWeather;
+    if (weatherData.isNotEmpty) {
+      weatherString = "Temp: ${weatherData['current_temp']}${weatherData['unit']}, "
+          "Hi: ${weatherData['max_temp']}, Lo: ${weatherData['min_temp']}";
+    } else {
+      // If empty, trigger fetch (service handles deduplication)
+      weatherService.getCurrentWeather();
     }
 
     if (!mounted) return;
@@ -114,10 +135,13 @@ class _AIChatPageState extends State<AIChatPage> {
 
   @override
   void dispose() {
+    _focusNode.removeListener(_onFocusChange);
+    _focusNode.dispose();
     _scrollController.dispose();
     _itemSubscription?.cancel();
     try {
       _aiService.removeListener(_scrollDown);
+      context.read<WeatherService>().removeListener(_onWeatherChanged);
     } catch (_) {}
     super.dispose();
   }
@@ -207,11 +231,12 @@ class _AIChatPageState extends State<AIChatPage> {
 
         // 4. Input Pill (Floating at bottom)
         Positioned(
-          bottom: 120, // Positioned above the Bottom Nav Bar (which has height ~100 including padding)
+          bottom: (_isKeyboardVisible || MediaQuery.of(context).viewInsets.bottom > 0) ? 16 : 120,
           left: 20,
           right: 20,
           child: _InputPill(
             controller: _textController,
+            focusNode: _focusNode,
             onSend: _sendMessage,
             isLoading: context.select<AIService, bool>((s) => s.isLoading),
           ),
@@ -223,11 +248,13 @@ class _AIChatPageState extends State<AIChatPage> {
 
 class _InputPill extends StatelessWidget {
   final TextEditingController controller;
+  final FocusNode focusNode;
   final VoidCallback onSend;
   final bool isLoading;
 
   const _InputPill({
     required this.controller,
+    required this.focusNode,
     required this.onSend,
     required this.isLoading,
   });
@@ -247,6 +274,7 @@ class _InputPill extends StatelessWidget {
             Expanded(
               child: TextField(
                 controller: controller,
+                focusNode: focusNode,
                 style: AppText.title.copyWith(color: AppColors.accent),
                 cursorColor: AppColors.accent,
                 decoration: InputDecoration(

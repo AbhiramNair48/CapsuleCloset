@@ -10,12 +10,20 @@ class _WeatherCacheItem {
   _WeatherCacheItem(this.data, this.timestamp);
 }
 
-class WeatherService {
+class WeatherService extends ChangeNotifier {
   final Map<String, _WeatherCacheItem> _cache = {};
   static const Duration _cacheDuration = Duration(minutes: 30);
   Position? _lastFetchPosition;
 
+  Map<String, dynamic> _currentWeather = {};
+  bool _isFetching = false;
+
+  Map<String, dynamic> get currentWeather => _currentWeather;
+  bool get isFetching => _isFetching;
+
   Future<Map<String, dynamic>> getCurrentWeather() async {
+    if (_isFetching) return _currentWeather;
+    
     try {
       // Optimization: Check if we have a valid cache for the last known position
       if (_lastFetchPosition != null) {
@@ -26,10 +34,14 @@ class WeatherService {
           final age = DateTime.now().difference(cachedItem.timestamp);
           if (age < _cacheDuration) {
             debugPrint('Returning fast cached weather data for $cacheKey');
-            return cachedItem.data;
+            _currentWeather = cachedItem.data;
+            return _currentWeather;
           }
         }
       }
+
+      _isFetching = true;
+      notifyListeners();
 
       // 1. Get Location
       Position position = await _determinePosition();
@@ -46,7 +58,10 @@ class WeatherService {
         if (age < _cacheDuration) {
           debugPrint(
               'Returning cached weather data for $cacheKey (Age: ${age.inMinutes} mins)');
-          return cachedItem.data;
+          _currentWeather = cachedItem.data;
+          _isFetching = false;
+          notifyListeners();
+          return _currentWeather;
         } else {
           _cache.remove(cacheKey); // Expired
         }
@@ -57,7 +72,7 @@ class WeatherService {
           'https://api.open-meteo.com/v1/forecast?latitude=${position.latitude}&longitude=${position.longitude}&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,weather_code&forecast_days=1&temperature_unit=fahrenheit');
 
       final response = await http.get(url).timeout(
-        const Duration(seconds: 10),
+        const Duration(seconds: 15),
         onTimeout: () {
           throw Exception('Connection timed out');
         },
@@ -81,20 +96,23 @@ class WeatherService {
           'min_temp': minTemp,
           'precip_chance': precipChance,
           'daily_weather_code': dailyWeatherCode,
-          'unit': data['current_units']['temperature_2m'] ?? '°C',
+          'unit': data['current_units']['temperature_2m'] ?? '°F',
         };
 
         // Update cache
         _cache[cacheKey] = _WeatherCacheItem(weatherData, DateTime.now());
+        _currentWeather = weatherData;
+        _isFetching = false;
+        notifyListeners();
 
         return weatherData;
       } else {
         throw Exception('Failed to load weather data');
       }
     } catch (e) {
-      // Return null or throw depending on how we want to handle it.
-      // For now, let's return null to indicate failure without crashing.
       debugPrint('Weather Error: $e');
+      _isFetching = false;
+      notifyListeners();
       return {};
     }
   }
@@ -123,7 +141,10 @@ class WeatherService {
     } 
 
     return await Geolocator.getCurrentPosition(
-      locationSettings: const LocationSettings(timeLimit: Duration(seconds: 5)),
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.low, // Lower accuracy is faster
+        timeLimit: Duration(seconds: 10), // Increased from 5s
+      ),
     );
   }
 }

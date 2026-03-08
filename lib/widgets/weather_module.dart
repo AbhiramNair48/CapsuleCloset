@@ -9,49 +9,62 @@ class WeatherModule extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // This needs to be a FutureBuilder or StreamBuilder to handle async data properly
-    // reusing the logic from the previous file but with new UI
-    
-    return FutureBuilder<Map<String, dynamic>>(
-      future: context.read<WeatherService>().getCurrentWeather(),
-      builder: (context, snapshot) {
-        String temp = "--";
-        String high = "--";
-        String low = "--";
-        
-        if (snapshot.hasData && snapshot.data != null && snapshot.data!.isNotEmpty) {
-           temp = "${snapshot.data!['current_temp']}°";
-           high = "${snapshot.data!['max_temp']}°";
-           low = "${snapshot.data!['min_temp']}°";
-        }
+    final weatherService = context.watch<WeatherService>();
+    final data = weatherService.currentWeather;
+    final isFetching = weatherService.isFetching;
 
-        return GlassContainer(
-          width: 85, // Increased from 80
-          height: 85, // Increased from 80 to maintain circle
-          borderRadius: BorderRadius.circular(50), 
-          padding: EdgeInsets.zero,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  temp,
-                  style: AppText.header.copyWith(fontSize: 20, height: 1), // Reduced from 22
-                ),
+    String temp = "--";
+    String high = "--";
+    String low = "--";
+
+    if (data.isNotEmpty) {
+      temp = "${data['current_temp']}°";
+      high = "${data['max_temp']}°";
+      low = "${data['min_temp']}°";
+    }
+
+    // Trigger fetch if empty and not fetching
+    if (data.isEmpty && !isFetching) {
+      Future.microtask(() {
+        if (context.mounted) {
+          context.read<WeatherService>().getCurrentWeather();
+        }
+      });
+    }
+
+    return GlassContainer(
+      width: 85,
+      height: 85,
+      borderRadius: BorderRadius.circular(50),
+      padding: EdgeInsets.zero,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (isFetching && data.isEmpty)
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white70),
+            )
+          else ...[
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                temp,
+                style: AppText.header.copyWith(fontSize: 20, height: 1),
               ),
-              const SizedBox(height: 2),
-              FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Text(
-                  "H:$high L:$low",
-                  style: AppText.label.copyWith(fontSize: 8, color: AppColors.accent),
-                ),
-              )
-            ],
-          ),
-        );
-      },
+            ),
+            const SizedBox(height: 2),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                "H:$high L:$low",
+                style: AppText.label.copyWith(fontSize: 8, color: AppColors.accent),
+              ),
+            ),
+          ]
+        ],
+      ),
     );
   }
 }

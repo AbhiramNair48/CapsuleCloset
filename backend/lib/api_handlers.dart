@@ -311,7 +311,7 @@ class ApiHandlers {
         final imgLink = row.colByName('img_link');
         final imagePath = (imgLink != null && imgLink.startsWith('http'))
             ? imgLink
-            : (imgLink != null) ? 'http://10.0.2.2:8080/images/$imgLink' : '';
+            : (imgLink != null) ? '/images/$imgLink' : '';
 
         final item = {
           'id': row.colByName('id').toString(),
@@ -659,6 +659,52 @@ class ApiHandlers {
     } catch (e) {
       print('Error fetching outfits: $e');
       return Response.internalServerError(body: 'Error fetching outfits: $e');
+    }
+  }
+
+  Future<Response> handleCreateOutfit(Request request) async {
+    try {
+      final content = await request.readAsString();
+      final data = jsonDecode(content) as Map<String, dynamic>;
+
+      final userId = data['user_id'];
+      final outfitName = data['outfit_name'];
+      final itemIds = data['item_ids'] as List?;
+
+      if (userId == null || outfitName == null || itemIds == null || itemIds.isEmpty) {
+        return Response.badRequest(body: 'Missing required fields: user_id, outfit_name, and item_ids are required.');
+      }
+
+      // 1. Insert Outfit
+      final insertResult = await pool.execute(
+        'INSERT INTO outfits (user_id, outfit_name, description) VALUES (:user_id, :outfit_name, :description)',
+        {
+          "user_id": int.parse(userId.toString()),
+          "outfit_name": outfitName,
+          "description": data['description'] ?? '',
+        },
+      );
+      final outfitId = insertResult.lastInsertID;
+
+      // 2. Insert Items (using a loop with parameters for safety)
+      for (final itemId in itemIds) {
+        await pool.execute(
+          'INSERT INTO outfit_items (outfit_id, clothing_item_id) VALUES (:outfit_id, :item_id)',
+          {
+            "outfit_id": outfitId,
+            "item_id": int.parse(itemId.toString()),
+          },
+        );
+      }
+
+      return Response(201, body: jsonEncode({
+        'id': outfitId.toString(),
+        'message': 'Outfit created successfully'
+      }));
+
+    } catch (e) {
+      print('Error creating outfit: $e');
+      return Response.internalServerError(body: 'Error creating outfit: $e');
     }
   }
 

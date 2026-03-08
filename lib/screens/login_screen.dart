@@ -21,8 +21,6 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   bool _isPasswordVisible = false;
 
-  static const double _logoSize = 120.0;
-
   Future<void> _handleLogin() async {
     if (!_formKey.currentState!.validate()) return;
 

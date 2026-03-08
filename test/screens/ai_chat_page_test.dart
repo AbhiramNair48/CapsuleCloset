@@ -79,10 +79,9 @@ Finder findRichTextContaining(String text) {
   });
 }
 
-class ManualMockWeatherService implements WeatherService {
+class ManualMockWeatherService extends ChangeNotifier implements WeatherService {
   @override
-  Future<Map<String, dynamic>> getCurrentWeather() async {
-    return {
+  Map<String, dynamic> get currentWeather => {
       'current_temp': 72.0,
       'current_weather_code': 0,
       'max_temp': 80.0,
@@ -91,6 +90,13 @@ class ManualMockWeatherService implements WeatherService {
       'daily_weather_code': 0,
       'unit': '°F',
     };
+
+  @override
+  bool get isFetching => false;
+
+  @override
+  Future<Map<String, dynamic>> getCurrentWeather() async {
+    return currentWeather;
   }
 }
 
@@ -127,7 +133,7 @@ class MockDataService extends ChangeNotifier implements DataService {
   void filterClothingItemsByType(String? type) {}
   
   @override
-  void addOutfit(Outfit outfit) {}
+  Future<void> addOutfit(Outfit outfit) async {}
   
   @override
   void updateOutfit(Outfit updatedOutfit) {}
@@ -223,7 +229,7 @@ void main() {
         providers: [
           ChangeNotifierProvider<AIService>.value(value: mockAIService),
           ChangeNotifierProvider<DataService>.value(value: mockDataService),
-          Provider<WeatherService>.value(value: mockWeatherService),
+          ChangeNotifierProvider<WeatherService>.value(value: mockWeatherService),
         ],
         child: const MaterialApp(
           home: Scaffold(

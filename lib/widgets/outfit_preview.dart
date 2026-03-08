@@ -25,24 +25,14 @@ class OutfitPreview extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Optional Label
-        // Padding(
-        //   padding: const EdgeInsets.only(left: 16.0, bottom: 8.0),
-        //   child: Text("Here's a look for you:", style: AppText.label),
-        // ),
         GlassContainer(
           width: double.infinity,
           borderRadius: BorderRadius.circular(AppRadius.card),
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-               // Image Grid/Stack
-               // For now, simple list view inside
                _buildImages(context),
-               
                const SizedBox(height: 16),
-               
-               // Actions
                Row(
                  children: [
                    Expanded(
@@ -53,7 +43,7 @@ class OutfitPreview extends StatelessWidget {
                      ),
                    ),
                    const SizedBox(width: 12),
-                   Expanded( // Added Expanded for equal width buttons
+                   Expanded(
                      child: _ActionButton(
                        label: "Hamper",
                        icon: Icons.local_laundry_service,
@@ -73,7 +63,6 @@ class OutfitPreview extends StatelessWidget {
   Widget _buildImages(BuildContext context) {
     if (imagePaths.isEmpty) return const SizedBox.shrink();
     
-    // If only one image, show it full size
     if (imagePaths.length == 1) {
       return Container(
         height: 300,
@@ -89,11 +78,9 @@ class OutfitPreview extends StatelessWidget {
       );
     }
 
-    // Grid layout for multiple images
     return Container(
-      // Constrain height based on row count (approx 150px per row) to avoid infinite height in Column
       height: (imagePaths.length / 2).ceil() * 160.0, 
-      constraints: const BoxConstraints(maxHeight: 400), // Max height limit
+      constraints: const BoxConstraints(maxHeight: 400),
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
@@ -103,10 +90,10 @@ class OutfitPreview extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         child: GridView.builder(
           padding: const EdgeInsets.all(8),
-          physics: imagePaths.length <= 2 ? const NeverScrollableScrollPhysics() : null, // Disable scroll for few items
+          physics: imagePaths.length <= 2 ? const NeverScrollableScrollPhysics() : null,
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            childAspectRatio: 0.8, // Taller items
+            childAspectRatio: 0.8,
             crossAxisSpacing: 8,
             mainAxisSpacing: 8,
           ),
@@ -142,6 +129,8 @@ class OutfitPreview extends StatelessWidget {
 
   Future<void> _saveOutfit(BuildContext context) async {
     final dataService = context.read<DataService>();
+    final authService = context.read<AuthService>();
+    
     final items = dataService.clothingItems
         .where((item) => itemIds.contains(item.id))
         .toList();
@@ -156,9 +145,9 @@ class OutfitPreview extends StatelessWidget {
         items: items,
         savedDate: now,
       );
-      dataService.addOutfit(newOutfit);
+      await dataService.addOutfit(newOutfit);
 
-      final userId = context.read<AuthService>().currentUser?['id']?.toString();
+      final userId = authService.currentUser?['id']?.toString();
       if (userId != null) {
         final shouldShow = await dataService.recordOutfitCreationAndCheckFeedbackPopup(userId);
         if (shouldShow && context.mounted) {
@@ -209,7 +198,6 @@ class _ActionButtonState extends State<_ActionButton> {
         _isSuccess = true;
       });
 
-      // Revert back after 1 second
       Future.delayed(const Duration(seconds: 1), () {
         if (mounted) {
           setState(() {
