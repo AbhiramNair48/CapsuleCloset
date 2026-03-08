@@ -197,6 +197,12 @@ class MockDataService extends ChangeNotifier implements DataService {
 
   @override
   Future<String?> uploadProfilePicture(XFile imageFile) async => null;
+
+  @override
+  Future<void> markFeedbackPopupShown(String userId) async {}
+
+  @override
+  Future<bool> recordOutfitCreationAndCheckFeedbackPopup(String userId) async => false;
 }
 
 

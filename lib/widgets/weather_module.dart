@@ -16,33 +16,37 @@ class WeatherModule extends StatelessWidget {
       future: context.read<WeatherService>().getCurrentWeather(),
       builder: (context, snapshot) {
         String temp = "--";
-        // ignore: unused_local_variable
         String high = "--";
-        // ignore: unused_local_variable
         String low = "--";
         
-        if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+        if (snapshot.hasData && snapshot.data != null && snapshot.data!.isNotEmpty) {
            temp = "${snapshot.data!['current_temp']}°";
            high = "${snapshot.data!['max_temp']}°";
            low = "${snapshot.data!['min_temp']}°";
         }
 
         return GlassContainer(
-          width: 80,
-          height: 80,
-          borderRadius: BorderRadius.circular(50), // Circular
+          width: 85, // Increased from 80
+          height: 85, // Increased from 80 to maintain circle
+          borderRadius: BorderRadius.circular(50), 
           padding: EdgeInsets.zero,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                temp,
-                style: AppText.header.copyWith(fontSize: 22, height: 1),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  temp,
+                  style: AppText.header.copyWith(fontSize: 20, height: 1), // Reduced from 22
+                ),
               ),
               const SizedBox(height: 2),
-              Text(
-                "H:$high L:$low",
-                style: AppText.label.copyWith(fontSize: 9, color: AppColors.accent),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  "H:$high L:$low",
+                  style: AppText.label.copyWith(fontSize: 8, color: AppColors.accent),
+                ),
               )
             ],
           ),

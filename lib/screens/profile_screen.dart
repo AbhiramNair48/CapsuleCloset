@@ -5,6 +5,7 @@ import '../services/data_service.dart';
 import '../widgets/glass_scaffold.dart';
 import '../widgets/glass_container.dart';
 import '../theme/app_design.dart';
+import '../widgets/feedback_dialog.dart';
 
 import 'package:image_picker/image_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -351,7 +352,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ],
                 ),
               ),
-              
+
+              const SizedBox(height: 24),
+              GestureDetector(
+                onTap: () => showFeedbackDialog(context),
+                child: GlassContainer(
+                  height: 56,
+                  borderRadius: BorderRadius.circular(28),
+                  color: AppColors.glassFill.withValues(alpha: 0.1),
+                  border: Border.all(color: AppColors.glassBorder),
+                  child: Center(
+                    child: Text(
+                      'Give Feedback',
+                      style: AppText.bodyBold.copyWith(fontSize: 16, color: Colors.white),
+                    ),
+                  ),
+                ),
+              ),
               const SizedBox(height: 32),
               GestureDetector(
                 onTap: _saveProfile,
