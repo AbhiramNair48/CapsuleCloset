@@ -634,6 +634,26 @@ class DataService extends ChangeNotifier {
     notifyListeners();
   }
 
+  static const int _feedbackPopupAfterCreations = 10;
+
+  /// Records an outfit creation for the user and returns whether to show the feedback popup
+  /// (exactly 10 creations and popup not yet shown). Call after [addOutfit].
+  Future<bool> recordOutfitCreationAndCheckFeedbackPopup(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final countKey = 'outfit_creation_count_$userId';
+    final shownKey = 'feedback_popup_shown_$userId';
+    final count = (prefs.getInt(countKey) ?? 0) + 1;
+    await prefs.setInt(countKey, count);
+    final alreadyShown = prefs.getBool(shownKey) ?? false;
+    return count == _feedbackPopupAfterCreations && !alreadyShown;
+  }
+
+  /// Call after showing the feedback popup so it is not shown again.
+  Future<void> markFeedbackPopupShown(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('feedback_popup_shown_$userId', true);
+  }
+
   /// Update an existing outfit
   void updateOutfit(Outfit updatedOutfit) {
     final index = _outfits.indexWhere((outfit) => outfit.id == updatedOutfit.id);

@@ -141,19 +141,22 @@ class _AIChatPageState extends State<AIChatPage> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Avatar placeholder (optional, implied by design)
-                        // Container(
-                        //   width: 60, height: 60,
-                        //   decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(20)),
-                        // ),
-                        // const SizedBox(height: 16),
-                        Text('Hello, $userName!', style: AppText.display),
-                        Text('What shall we wear?', style: AppText.subtitle),
-                      ],
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Avatar placeholder (optional, implied by design)
+                          // Container(
+                          //   width: 60, height: 60,
+                          //   decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(20)),
+                          // ),
+                          // const SizedBox(height: 16),
+                          Text('Hello, $userName!', style: AppText.display),
+                          Text('What shall we wear?', style: AppText.subtitle),
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 16),
                     const WeatherModule(), // Floating circular badge
                   ],
                 ),

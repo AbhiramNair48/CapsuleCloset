@@ -60,14 +60,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     final isLoading = context.watch<AuthService>().isLoading;
+    final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          icon: Icon(Icons.arrow_back, color: theme.iconTheme.color),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -86,7 +87,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     style: GoogleFonts.dancingScript(
                       fontSize: 48,
                       fontWeight: FontWeight.bold,
-                      color: Theme.of(context).primaryColor,
+                      color: theme.colorScheme.primary,
                     ),
                     textAlign: TextAlign.center,
                   ),

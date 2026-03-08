@@ -30,4 +30,8 @@ class AppConstants {
     
     return _isProduction ? _prodUrl : _localUrl;
   }
+
+  // --- FEEDBACK ---
+  // Replace with your Google Form (or other) feedback URL when ready.
+  static const String feedbackFormUrl = '';
 }

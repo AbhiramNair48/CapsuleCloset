@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:capsule_closet_app/services/data_service.dart';
+import 'package:capsule_closet_app/services/auth_service.dart';
 import 'package:capsule_closet_app/models/outfit.dart';
 import 'package:provider/provider.dart';
 import '../theme/app_design.dart';
 import 'glass_container.dart';
+import 'feedback_dialog.dart';
 
 class OutfitPreview extends StatelessWidget {
   final List<String> imagePaths;
@@ -147,7 +149,7 @@ class OutfitPreview extends StatelessWidget {
     if (items.isNotEmpty) {
       final now = DateTime.now();
       final name = outfitName ?? "${now.month}-${now.day} Look";
-      
+
       final newOutfit = Outfit(
         id: now.millisecondsSinceEpoch.toString(),
         name: name,
@@ -155,6 +157,17 @@ class OutfitPreview extends StatelessWidget {
         savedDate: now,
       );
       dataService.addOutfit(newOutfit);
+
+      final userId = context.read<AuthService>().currentUser?['id']?.toString();
+      if (userId != null) {
+        final shouldShow = await dataService.recordOutfitCreationAndCheckFeedbackPopup(userId);
+        if (shouldShow && context.mounted) {
+          await dataService.markFeedbackPopupShown(userId);
+          if (context.mounted) {
+            showFeedbackDialog(context);
+          }
+        }
+      }
     }
   }
 
