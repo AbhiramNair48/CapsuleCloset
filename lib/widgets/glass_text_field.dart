@@ -57,6 +57,7 @@ class GlassTextField extends StatelessWidget {
                   maxLines: maxLines,
                   style: AppText.body.copyWith(color: Colors.white),
                   cursorColor: AppColors.accent,
+                  textAlignVertical: TextAlignVertical.center,
                   decoration: InputDecoration(
                     hintText: hintText,
                     hintStyle: AppText.body.copyWith(color: Colors.white38),
@@ -65,14 +66,15 @@ class GlassTextField extends StatelessWidget {
                     enabledBorder: InputBorder.none,
                     errorBorder: InputBorder.none,
                     disabledBorder: InputBorder.none,
-                    suffixIcon: suffixIcon,
-                    contentPadding: maxLines > 1 
-                        ? const EdgeInsets.symmetric(vertical: 14)
-                        : EdgeInsets.zero,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                   validator: validator,
                 ),
               ),
+              if (suffixIcon != null) ...[
+                const SizedBox(width: 8),
+                suffixIcon!,
+              ],
             ],
           ),
         ),
