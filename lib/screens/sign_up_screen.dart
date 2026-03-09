@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
+import '../widgets/glass_scaffold.dart';
+import '../widgets/glass_container.dart';
+import '../widgets/glass_text_field.dart';
+import '../theme/app_design.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -60,15 +64,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     final isLoading = context.watch<AuthService>().isLoading;
-    final theme = Theme.of(context);
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
+    return GlassScaffold(
+      
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: theme.iconTheme.color),
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -87,17 +90,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     style: GoogleFonts.dancingScript(
                       fontSize: 48,
                       fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.primary,
+                      color: AppColors.accent,
                     ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 48),
-                  TextFormField(
+                  GlassTextField(
                     controller: _usernameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Username',
-                      prefixIcon: Icon(Icons.person_outline),
-                    ),
+                    hintText: 'Username',
+                    prefixIcon: Icons.person_outline,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter a username';
@@ -106,12 +107,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
+                  GlassTextField(
                     controller: _emailController,
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      prefixIcon: Icon(Icons.email_outlined),
-                    ),
+                    hintText: 'Email',
+                    prefixIcon: Icons.email_outlined,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter your email';
@@ -123,28 +122,22 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
+                  GlassTextField(
                     controller: _genderController,
-                    decoration: const InputDecoration(
-                      labelText: 'Gender (Optional)',
-                      prefixIcon: Icon(Icons.person),
-                    ),
+                    hintText: 'Gender (Optional)',
+                    prefixIcon: Icons.person,
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
+                  GlassTextField(
                     controller: _favoriteStyleController,
-                    decoration: const InputDecoration(
-                      labelText: 'Favorite Style (Optional)',
-                      prefixIcon: Icon(Icons.style),
-                    ),
+                    hintText: 'Favorite Style (Optional)',
+                    prefixIcon: Icons.style,
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
+                  GlassTextField(
                     controller: _passwordController,
-                    decoration: const InputDecoration(
-                      labelText: 'Password',
-                      prefixIcon: Icon(Icons.lock_outline),
-                    ),
+                    hintText: 'Password',
+                    prefixIcon: Icons.lock_outline,
                     obscureText: true,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -157,12 +150,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  TextFormField(
+                  GlassTextField(
                     controller: _confirmPasswordController,
-                    decoration: const InputDecoration(
-                      labelText: 'Confirm Password',
-                      prefixIcon: Icon(Icons.lock_outline),
-                    ),
+                    hintText: 'Confirm Password',
+                    prefixIcon: Icons.lock_outline,
                     obscureText: true,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
@@ -177,10 +168,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   const SizedBox(height: 32),
                   isLoading 
                     ? const Center(child: CircularProgressIndicator())
-                    : ElevatedButton(
-                        onPressed: _handleSignUp,
-                        child: const Text('Sign Up'),
-                      ),
+                    : GestureDetector(
+                        onTap: _handleSignUp,
+                        child: GlassContainer(
+                          height: 56,
+                          borderRadius: BorderRadius.circular(28),
+                          color: AppColors.accent.withValues(alpha: 0.2),
+                          border: Border.all(color: AppColors.accent.withValues(alpha: 0.5)),
+                          child: Center(
+                            child: Text(
+                              'Sign Up',
+                              style: AppText.bodyBold.copyWith(fontSize: 16),
+                            ),
+                          ),
+                        ),
+                      )
                 ],
               ),
             ),
