@@ -181,3 +181,15 @@ The application follows a layered architecture:
     *   Fixed `GenericDeleteScreen` test: Updated finder to locate "Delete" button by text, resolving failure due to custom widget implementation.
     *   Verified **22 passing tests** (App) and **1 passing test** (Backend).
     *   Verified **0 static analysis issues** in both App and Backend.
+
+## Refactor Log (March 8, 2026)
+*   **UI/Aesthetics Unification:**
+    *   Extracted repeated GlassContainer and TextFormField logic from LoginScreen and ProfileScreen into a new reusable GlassTextField widget (lib/widgets/glass_text_field.dart).
+    *   Refactored SignUpScreen to use GlassScaffold and GlassTextField for visual consistency across the application.
+*   **Boilerplate Reduction:**
+    *   Created _fetchList<T> helper in DataService to standardize HTTP GET requests, JSON decoding, and error handling.
+    *   Refactored etchClothingItems, etchOutfits, etchFriends, and etchPendingFriendRequests to use the new helper, significantly reducing duplicated try-catch boilerplate.
+*   **Testing:**
+    *   Fixed login_screen_test.dart interaction issues (Out of Bounds Tap) caused by scrollable views using 	ester.ensureVisible.
+    *   Verified **22 passing tests** (App) and **1 passing test** (Backend).
+    *   Verified **0 static analysis issues** in both App and Backend.
