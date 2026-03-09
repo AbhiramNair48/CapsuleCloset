@@ -26,7 +26,7 @@ Future<void> main() async {
   final pool = MySQLConnectionPool(
     host: dbIp,
     port: dbPort,
-    userName: "root",
+    userName: "adminUser",
     password: env['DB_PASSWORD'] ?? "root",
     databaseName: "capsule_closet",
     maxConnections: 10,
