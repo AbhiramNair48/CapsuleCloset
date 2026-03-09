@@ -204,107 +204,52 @@ class DataService extends ChangeNotifier {
     }
   }
   
-  /// Fetches clothing items for the given user from the backend
-  Future<void> fetchClothingItems(String userId) async {
-    try {
-      final url = Uri.parse('${AppConstants.baseUrl}/closet?user_id=$userId');
-      final response = await _client.get(url);
 
+  Future<List<T>> _fetchList<T>(String endpoint, T Function(Map<String, dynamic>) fromJson) async {
+    try {
+      final url = Uri.parse('${AppConstants.baseUrl}$endpoint');
+      final response = await _client.get(url);
       if (response.statusCode == 200) {
-        final List<dynamic> itemsJson = jsonDecode(response.body);
-        _clothingItems = itemsJson.map((json) => ClothingItem.fromJson(json)).toList();
-        _filteredClothingItems = _clothingItems.where((item) => item.isClean).toList();
-        // Cache the items for background use
-        _cacheClothingItems(userId);
+        final List<dynamic> jsonList = jsonDecode(response.body);
+        return jsonList.map((json) => fromJson(json)).toList();
       } else {
         if (kDebugMode) {
-          print('Failed to load clothing items: ${response.statusCode}');
+          print('Failed to load from $endpoint: ${response.statusCode}');
         }
-        _clothingItems = [];
-        _filteredClothingItems = [];
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Error fetching clothing items: $e');
+        print('Error fetching from $endpoint: $e');
       }
-      _clothingItems = [];
-      _filteredClothingItems = [];
+    }
+    return [];
+  }
+
+  /// Fetches clothing items for the given user from the backend
+  Future<void> fetchClothingItems(String userId) async {
+    _clothingItems = await _fetchList('/closet?user_id=$userId', ClothingItem.fromJson);
+    _filteredClothingItems = _clothingItems.where((item) => item.isClean).toList();
+    if (_clothingItems.isNotEmpty) {
+      _cacheClothingItems(userId);
     }
     notifyListeners();
   }
 
   /// Fetches outfits for the given user from the backend
   Future<void> fetchOutfits(String userId) async {
-    try {
-      final url = Uri.parse('${AppConstants.baseUrl}/outfits?user_id=$userId');
-      final response = await _client.get(url);
-
-      if (response.statusCode == 200) {
-        final List<dynamic> itemsJson = jsonDecode(response.body);
-        _outfits = itemsJson.map((json) => Outfit.fromJson(json)).toList();
-      } else {
-        if (kDebugMode) {
-          print('Failed to load outfits: ${response.statusCode}');
-        }
-        _outfits = [];
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error fetching outfits: $e');
-      }
-      _outfits = [];
-    }
+    _outfits = await _fetchList('/outfits?user_id=$userId', Outfit.fromJson);
     notifyListeners();
   }
 
   /// Fetches friends for the given user from the backend
   Future<void> fetchFriends(String userId) async {
-    try {
-      final url = Uri.parse('${AppConstants.baseUrl}/friends?user_id=$userId');
-      final response = await _client.get(url);
-
-      if (response.statusCode == 200) {
-        final List<dynamic> itemsJson = jsonDecode(response.body);
-        _friends = itemsJson.map((json) => Friend.fromJson(json)).toList();
-        if (kDebugMode) {
-          print('Fetched ${_friends.length} friends from backend.');
-        }
-      } else {
-        if (kDebugMode) {
-          print('Failed to load friends: ${response.statusCode}');
-        }
-        _friends = [];
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error fetching friends: $e');
-      }
-      _friends = [];
-    }
+    _friends = await _fetchList('/friends?user_id=$userId', Friend.fromJson);
     notifyListeners();
   }
 
   /// Fetches pending friend requests for the given user from the backend
   Future<void> fetchPendingFriendRequests(String userId) async {
-    try {
-      final url = Uri.parse('${AppConstants.baseUrl}/friends/pending?user_id=$userId');
-      final response = await _client.get(url);
-
-      if (response.statusCode == 200) {
-        final List<dynamic> itemsJson = jsonDecode(response.body);
-        _pendingFriendRequests = itemsJson.map((json) => PendingFriendRequest.fromJson(json)).toList();
-      } else {
-        if (kDebugMode) {
-          print('Failed to load pending friend requests: ${response.statusCode}');
-        }
-        _pendingFriendRequests = [];
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error fetching pending friend requests: $e');
-      }
-      _pendingFriendRequests = [];
-    }
+    _pendingFriendRequests = await _fetchList('/friends/pending?user_id=$userId', PendingFriendRequest.fromJson);
     notifyListeners();
   }
 
