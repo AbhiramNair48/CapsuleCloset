@@ -309,18 +309,16 @@ class ApiHandlers {
       for (final row in itemsResult.rows) {
         final friendId = row.colByName('user_id').toString();
         final imgLink = row.colByName('img_link');
-        final imagePath = (imgLink != null && imgLink.startsWith('http'))
-            ? imgLink
-            : (imgLink != null) ? '/images/$imgLink' : '';
+        final imagePath = (imgLink != null && imgLink.startsWith('http')) ? imgLink : (imgLink != null) ? '/images/$imgLink' : '';
 
         final item = {
           'id': row.colByName('id').toString(),
           'imagePath': imagePath,
-          'type': row.colByName('clothing_type'),
-          'material': row.colByName('material'),
-          'color': row.colByName('color'),
-          'style': row.colByName('style'),
-          'description': row.colByName('description'),
+          'type': row.colByName('clothing_type') ?? '',
+          'material': row.colByName('material') ?? '',
+          'color': row.colByName('color') ?? '',
+          'style': row.colByName('style') ?? '',
+          'description': row.colByName('description') ?? '',
           'public': row.colByName('public') == '1',
         };
 
@@ -549,11 +547,7 @@ class ApiHandlers {
 
       final items = results.rows.map((row) {
         final imgLink = row.colByName('img_link');
-        final imagePath = (imgLink != null && imgLink.startsWith('http'))
-            ? imgLink
-            : (imgLink != null)
-                ? 'http://10.0.2.2:8080/images/$imgLink'
-                : '';
+        final imagePath = (imgLink != null && imgLink.startsWith('http')) ? imgLink : (imgLink != null) ? '/images/$imgLink' : '';
 
         // Safe access for is_clean in case column doesn't exist yet (though query would fail)
         // If query fails, we land in catch block.
@@ -565,11 +559,11 @@ class ApiHandlers {
         return {
           'id': row.colByName('id').toString(),
           'imagePath': imagePath,
-          'type': row.colByName('clothing_type'),
-          'material': row.colByName('material'),
-          'color': row.colByName('color'),
-          'style': row.colByName('style'),
-          'description': row.colByName('description'),
+          'type': row.colByName('clothing_type') ?? '',
+          'material': row.colByName('material') ?? '',
+          'color': row.colByName('color') ?? '',
+          'style': row.colByName('style') ?? '',
+          'description': row.colByName('description') ?? '',
           'public': row.colByName('public') == '1',
           'isClean': isClean,
         };
@@ -619,20 +613,16 @@ class ApiHandlers {
       for (final row in itemsResult.rows) {
         final outfitId = row.colByName('outfit_id').toString();
         final imgLink = row.colByName('img_link');
-        final imagePath = (imgLink != null && imgLink.startsWith('http'))
-            ? imgLink
-            : (imgLink != null)
-                ? 'http://10.0.2.2:8080/images/$imgLink'
-                : '';
+        final imagePath = (imgLink != null && imgLink.startsWith('http')) ? imgLink : (imgLink != null) ? '/images/$imgLink' : '';
 
         final item = {
           'id': row.colByName('id').toString(),
           'imagePath': imagePath,
-          'type': row.colByName('clothing_type'),
-          'material': row.colByName('material'),
-          'color': row.colByName('color'),
-          'style': row.colByName('style'),
-          'description': row.colByName('description'),
+          'type': row.colByName('clothing_type') ?? '',
+          'material': row.colByName('material') ?? '',
+          'color': row.colByName('color') ?? '',
+          'style': row.colByName('style') ?? '',
+          'description': row.colByName('description') ?? '',
         };
 
         if (!itemsByOutfitId.containsKey(outfitId)) {
@@ -645,9 +635,11 @@ class ApiHandlers {
         final outfitId = row.colByName('id').toString();
         return {
           'id': outfitId,
-          'name': row.colByName('outfit_name'),
+          'name': row.colByName('outfit_name') ?? 'Unnamed Outfit',
           'savedDate':
-              (row.colByName('created_at') as DateTime).toIso8601String(),
+              (row.colByName('created_at') is DateTime) 
+                  ? (row.colByName('created_at') as DateTime).toIso8601String() 
+                  : DateTime.parse(row.colByName('created_at').toString()).toIso8601String(),
           'items': itemsByOutfitId[outfitId] ?? [],
         };
       }).toList();
