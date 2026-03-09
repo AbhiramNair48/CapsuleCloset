@@ -83,6 +83,7 @@ void main() {
   testWidgets('Shows validation errors for empty fields', (WidgetTester tester) async {
     await tester.pumpWidget(createLoginScreen());
 
+    await tester.ensureVisible(find.text('Sign In'));
     await tester.tap(find.text('Sign In'));
     await tester.pump(); // Rebuild
 
@@ -97,6 +98,7 @@ void main() {
     await tester.enterText(find.byType(TextFormField).first, 'test@example.com');
     await tester.enterText(find.byType(TextFormField).last, 'password123');
     
+    await tester.ensureVisible(find.text('Sign In'));
     await tester.tap(find.text('Sign In'));
     await tester.pump(); // Start loading
     await tester.pump(const Duration(milliseconds: 50)); // Wait for future
@@ -112,6 +114,7 @@ void main() {
     await tester.enterText(find.byType(TextFormField).first, 'test@example.com');
     await tester.enterText(find.byType(TextFormField).last, 'wrongpassword');
     
+    await tester.ensureVisible(find.text('Sign In'));
     await tester.tap(find.text('Sign In'));
     await tester.pump(); // Start loading
     await tester.pump(const Duration(milliseconds: 50)); // Wait for future

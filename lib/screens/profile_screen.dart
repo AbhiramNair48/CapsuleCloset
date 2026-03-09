@@ -4,6 +4,7 @@ import '../models/user_profile.dart';
 import '../services/data_service.dart';
 import '../widgets/glass_scaffold.dart';
 import '../widgets/glass_container.dart';
+import '../widgets/glass_text_field.dart';
 import '../theme/app_design.dart';
 import '../widgets/feedback_dialog.dart';
 
@@ -285,14 +286,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              _buildTextField('Name', _nameController, Icons.person_outline),
+              GlassTextField(label: 'Name', controller: _nameController, prefixIcon: Icons.person_outline, borderRadius: 12, padding: const EdgeInsets.symmetric(horizontal: 16)),
               const SizedBox(height: 16),
-              _buildTextField('Gender', _genderController, Icons.wc),
+              GlassTextField(label: 'Gender', controller: _genderController, prefixIcon: Icons.wc, borderRadius: 12, padding: const EdgeInsets.symmetric(horizontal: 16)),
               const SizedBox(height: 16),
-              _buildTextField(
-                  'Favorite Style (e.g., Casual, Chic)',
-                  _styleController,
-                  Icons.style),
+              GlassTextField(label: 'Favorite Style (e.g., Casual, Chic)', controller: _styleController, prefixIcon: Icons.style, borderRadius: 12, padding: const EdgeInsets.symmetric(horizontal: 16)),
               const SizedBox(height: 32),
               
               Text(
@@ -393,34 +391,4 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller,
-      IconData icon, {int maxLines = 1}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: AppText.label.copyWith(color: Colors.white70)),
-        const SizedBox(height: 8),
-        GlassContainer(
-          borderRadius: BorderRadius.circular(12),
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          color: Colors.white.withValues(alpha: 0.05),
-          child: TextFormField(
-            controller: controller,
-            maxLines: maxLines,
-            style: AppText.body.copyWith(color: Colors.white),
-            cursorColor: AppColors.accent,
-            decoration: InputDecoration(
-              prefixIcon: Icon(icon, color: AppColors.accent),
-              border: InputBorder.none,
-              focusedBorder: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              errorBorder: InputBorder.none,
-              disabledBorder: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(vertical: 14),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 }

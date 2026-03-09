@@ -5,6 +5,7 @@ import '../services/auth_service.dart';
 import 'sign_up_screen.dart';
 import '../widgets/glass_scaffold.dart';
 import '../widgets/glass_container.dart';
+import '../widgets/glass_text_field.dart';
 import '../theme/app_design.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -156,10 +157,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 32),
                         
                         // Email field
-                        _buildGlassTextField(
+                        GlassTextField(
                           controller: _emailController,
                           hintText: 'Email',
-                          icon: Icons.email_outlined,
+                          prefixIcon: Icons.email_outlined,
                           keyboardType: TextInputType.emailAddress,
                           validator: (value) {
                             if (value == null || value.isEmpty) {
@@ -174,10 +175,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 20),
 
                         // Password field
-                        _buildGlassTextField(
+                        GlassTextField(
                           controller: _passwordController,
                           hintText: 'Password',
-                          icon: Icons.lock_outline,
+                          prefixIcon: Icons.lock_outline,
                           obscureText: !_isPasswordVisible,
                           suffixIcon: IconButton(
                             icon: Icon(
@@ -276,53 +277,6 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildGlassTextField({
-    required TextEditingController controller,
-    required String hintText,
-    required IconData icon,
-    bool obscureText = false,
-    TextInputType? keyboardType,
-    Widget? suffixIcon,
-    String? Function(String?)? validator,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        GlassContainer(
-          borderRadius: BorderRadius.circular(16),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          color: Colors.white.withValues(alpha: 0.05),
-          child: Row(
-            children: [
-              Icon(icon, color: Colors.white70, size: 20),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextFormField(
-                  controller: controller,
-                  obscureText: obscureText,
-                  keyboardType: keyboardType,
-                  style: AppText.body.copyWith(color: Colors.white),
-                  cursorColor: AppColors.accent,
-                  decoration: InputDecoration(
-                    hintText: hintText,
-                    hintStyle: AppText.body.copyWith(color: Colors.white38),
-                    border: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    errorBorder: InputBorder.none,
-                    disabledBorder: InputBorder.none,
-                    suffixIcon: suffixIcon,
-                  ),
-                  validator: validator,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 

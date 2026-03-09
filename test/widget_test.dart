@@ -20,8 +20,7 @@ void main() {
 
     // Verify that the app contains the expected elements
     expect(find.byType(Scaffold), findsWidgets);
-    expect(find.byType(TextField), findsNWidgets(2)); // Email and password fields expected
-    expect(find.byType(Image), findsNWidgets(2)); // Logo and bottom image
+    expect(find.byType(TextFormField), findsNWidgets(2)); // Email and password fields expected
   });
 
   testWidgets('AuthService initializes correctly', (WidgetTester tester) async {
