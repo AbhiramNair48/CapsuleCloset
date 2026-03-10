@@ -19,24 +19,51 @@ class UploadToClosetPage extends StatefulWidget {
 class _UploadToClosetPageState extends State<UploadToClosetPage> {
   final List<XFile> _selectedImages = [];
   bool _isUploading = false;
+  bool _isPickingImages = false;
+  int _completedUploads = 0;
+  int _totalUploads = 0;
 
   final ImagePicker _picker = ImagePicker();
 
   Future<void> _pickImageFromGallery() async {
-    final List<XFile> images = await _picker.pickMultiImage();
-    if (images.isNotEmpty) {
-      setState(() {
-        _selectedImages.addAll(images);
-      });
+    if (_isUploading) return;
+    setState(() {
+      _isPickingImages = true;
+    });
+    try {
+      final List<XFile> images = await _picker.pickMultiImage();
+      if (images.isNotEmpty) {
+        setState(() {
+          _selectedImages.addAll(images);
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPickingImages = false;
+        });
+      }
     }
   }
 
   Future<void> _takePhoto() async {
-    final XFile? capturedImage = await _picker.pickImage(source: ImageSource.camera);
-    if (capturedImage != null) {
-      setState(() {
-        _selectedImages.add(capturedImage);
-      });
+    if (_isUploading) return;
+    setState(() {
+      _isPickingImages = true;
+    });
+    try {
+      final XFile? capturedImage = await _picker.pickImage(source: ImageSource.camera);
+      if (capturedImage != null) {
+        setState(() {
+          _selectedImages.add(capturedImage);
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isPickingImages = false;
+        });
+      }
     }
   }
 
@@ -82,6 +109,8 @@ class _UploadToClosetPageState extends State<UploadToClosetPage> {
 
     setState(() {
       _isUploading = true;
+      _totalUploads = _selectedImages.length;
+      _completedUploads = 0;
     });
 
     final imageRecognitionService = ImageRecognitionService();
@@ -102,7 +131,8 @@ class _UploadToClosetPageState extends State<UploadToClosetPage> {
     int successCount = 0;
     int failureCount = 0;
 
-    for (final image in _selectedImages) {
+    for (int i = 0; i < _selectedImages.length; i++) {
+      final image = _selectedImages[i];
       try {
         final recognizedItem = await imageRecognitionService.recognizeImage(image);
         if (recognizedItem != null) {
@@ -122,6 +152,12 @@ class _UploadToClosetPageState extends State<UploadToClosetPage> {
       } catch (e) {
         failureCount++;
         debugPrint('Error processing image: $e');
+      }
+
+      if (mounted) {
+        setState(() {
+          _completedUploads = i + 1;
+        });
       }
     }
 
@@ -156,9 +192,11 @@ class _UploadToClosetPageState extends State<UploadToClosetPage> {
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                child: _selectedImages.isEmpty
-                    ? _buildEmptyState()
-                    : _buildImagePreview(),
+                child: _isPickingImages
+                    ? _buildPickingImagesLoader()
+                    : _selectedImages.isEmpty
+                        ? _buildEmptyState()
+                        : _buildImagePreview(),
               ),
             ),
             Padding(
@@ -195,10 +233,24 @@ class _UploadToClosetPageState extends State<UploadToClosetPage> {
                         border: Border.all(color: AppColors.accent),
                         child: Center(
                           child: _isUploading
-                              ? const SizedBox(
-                                  height: 24,
-                                  width: 24,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              ? Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                                      child: LinearProgressIndicator(
+                                        value: _totalUploads > 0 ? _completedUploads / _totalUploads : null,
+                                        color: Colors.white,
+                                        backgroundColor: Colors.white24,
+                                        minHeight: 4,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '$_completedUploads completed, ${_totalUploads - _completedUploads} left to go',
+                                      style: AppText.bodyBold.copyWith(fontSize: 12, color: Colors.white),
+                                    ),
+                                  ],
                                 )
                               : Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -217,6 +269,26 @@ class _UploadToClosetPageState extends State<UploadToClosetPage> {
                   ]
                 ],
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPickingImagesLoader() {
+    return GlassContainer(
+      borderRadius: BorderRadius.circular(32),
+      padding: const EdgeInsets.all(24),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const CircularProgressIndicator(color: AppColors.accent),
+            const SizedBox(height: 24),
+            Text(
+              'Loading images...',
+              style: AppText.bodyBold,
             ),
           ],
         ),
@@ -320,7 +392,15 @@ class _UploadToClosetPageState extends State<UploadToClosetPage> {
             child: TextButton.icon(
               onPressed: _showAllImagesDrawer,
               icon: const Icon(Icons.grid_view_rounded, size: 16, color: Colors.white),
-              label: Text('+${_selectedImages.length - 4} more', style: AppText.bodyBold),
+              label: Text(
+                '+${_selectedImages.length - 4} more',
+                style: AppText.bodyBold.copyWith(color: Colors.white),
+              ),
+              style: TextButton.styleFrom(
+                backgroundColor: AppColors.glassFill,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              ),
             ),
           ),
         ],
