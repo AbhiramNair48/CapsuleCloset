@@ -4,6 +4,7 @@ import 'package:capsule_closet_app/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MockAuthService extends ChangeNotifier implements AuthService {
   bool _loginSuccess = true;
@@ -56,6 +57,7 @@ void main() {
 
   setUp(() {
     mockAuthService = MockAuthService();
+    SharedPreferences.setMockInitialValues({});
   });
 
   Widget createLoginScreen() {
